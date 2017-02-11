@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/peterbecich/fp-course.svg?branch=master)](https://travis-ci.org/peterbecich/fp-course)
+
 # Functional Programming Course
 
 ![Data61](http://i.imgur.com/0h9dFhl.png)
