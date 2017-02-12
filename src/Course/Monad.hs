@@ -58,6 +58,7 @@ infixr 1 =<<
 --
 -- >>> ((*) <**> (+2)) 3
 -- 15
+
 (<**>) ::
   Monad f =>
   f (a -> b)
@@ -65,6 +66,13 @@ infixr 1 =<<
   -> f b
 (<**>) =
   error "todo: Course.Monad#(<**>)"
+
+(<*>) :: Monad f => f (a -> b) -> f a -> f b
+(<*>) ff fx = error "todo: Course.Monad (=<<)#instance Id"
+
+
+  --(\x -> <$>=<< fx
+  
 
 infixl 4 <**>
 

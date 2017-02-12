@@ -24,19 +24,29 @@ import qualified Prelude as P(fmap, return, (>>=))
 -- * The law of right identity
 --   `∀x. x <*> pure id ≅ x`
 class Functor f => Applicative f where
-  pure ::
-    a -> f a
-  (<*>) ::
-    f (a -> b)
-    -> f a
-    -> f b
+  pure :: a -> f a
+  (<*>) :: f (a -> b) -> f a -> f b
 
 infixl 4 <*>
 
--- | Insert into ExactlyOne.
+-- | Witness that all things with (<*>) and pure also have (<$>).
+--
+-- >>> (+1) <$> (Id 2)
+-- Id 3
+--
+-- >>> (+1) <$> Nil
+-- []
+--
+-- >>> (+1) <$> (1 :. 2 :. 3 :. Nil)
+-- [2,3,4]
+(<$>) :: Applicative f => (a -> b) -> f a -> f b
+(<$>) f fx = pure f <*> fx
+
+-- | Insert into Id.
 --
 -- prop> pure x == ExactlyOne x
 --
+
 -- >>> ExactlyOne (+10) <*> ExactlyOne 8
 -- ExactlyOne 18
 instance Applicative ExactlyOne where
@@ -52,6 +62,15 @@ instance Applicative ExactlyOne where
   (<*>) =
     error "todo: Course.Applicative (<*>)#instance ExactlyOne"
 
+-- >>> Id (+10) <*> Id 8
+-- Id 18
+instance Applicative Id where
+  pure :: a -> Id a
+  pure x = Id x
+  (<*>) :: Id (a -> b) -> Id a -> Id b
+  (<*>) (Id f) (Id x) = Id $ f x
+
+
 -- | Insert into a List.
 --
 -- prop> pure x == x :. Nil
@@ -59,17 +78,12 @@ instance Applicative ExactlyOne where
 -- >>> (+1) :. (*2) :. Nil <*> 1 :. 2 :. 3 :. Nil
 -- [2,3,4,2,4,6]
 instance Applicative List where
-  pure ::
-    a
-    -> List a
-  pure =
-    error "todo: Course.Applicative pure#instance List"
-  (<*>) ::
-    List (a -> b)
-    -> List a
-    -> List b
-  (<*>) =
-    error "todo: Course.Apply (<*>)#instance List"
+  pure :: a -> List a
+  pure x = x :. Nil
+  (<*>) :: List (a -> b) -> List a -> List b
+  (<*>) llf llx = let
+    zipped = zip llf llx
+    in (\tup -> (fst tup) (snd tup)) <$> zipped
 
 -- | Witness that all things with (<*>) and pure also have (<$>).
 --
@@ -102,17 +116,10 @@ instance Applicative List where
 -- >>> Full (+8) <*> Empty
 -- Empty
 instance Applicative Optional where
-  pure ::
-    a
-    -> Optional a
-  pure =
-    error "todo: Course.Applicative pure#instance Optional"
-  (<*>) ::
-    Optional (a -> b)
-    -> Optional a
-    -> Optional b
-  (<*>) =
-    error "todo: Course.Apply (<*>)#instance Optional"
+  pure :: a -> Optional a
+  pure x = Full x
+  (<*>) :: Optional (a -> b) -> Optional a -> Optional b
+  (<*>) opf opx = applyOptional opf opx
 
 -- | Insert into a constant function.
 --
