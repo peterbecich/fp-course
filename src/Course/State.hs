@@ -204,13 +204,14 @@ put s0 = State (\_ -> ((), s0))
 --
 -- >>> let p x = (\s -> (const $ pure (x == 'i')) =<< put (1+s)) =<< get in runState (findM p $ listh ['a'..'h']) 0
 -- (Empty,8)
-findM ::
-  Monad f =>
-  (a -> f Bool)
-  -> List a
-  -> f (Optional a)
-findM =
-  error "todo: Course.State#findM"
+findM :: Monad f => (a -> f Bool) -> List a -> f (Optional a)
+findM g (x:.xs) = error "todo findM"
+-- let
+--   fBool :: f Bool
+--   fBool = g x
+--   h b = if (b==True) then Full x else findM g xs
+--   in h =<< fBool
+
 
 -- | Find the first element in a `List` that repeats.
 -- It is possible that no element repeats, hence an `Optional` result.
