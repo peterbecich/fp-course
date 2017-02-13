@@ -14,6 +14,8 @@ import Course.Applicative
 import Course.Monad
 import qualified Data.Set as S
 
+import Data.Bifunctor
+
 -- $setup
 -- >>> import Test.QuickCheck.Function
 -- >>> import Data.List(nub)
@@ -74,13 +76,31 @@ put =
 --
 -- >>> runState ((+1) <$> State (\s -> (9, s * 2))) 3
 -- (10,6)
+
+counter :: State Int Int
+counter = State (\s -> (s+1, s+1))
+
+rs :: Int -> (Int, Int)
+rs = runState counter
+one :: (Int, Int)
+one = rs 0
+
+foo :: Int -> Bool
+foo i = x
+  where x = i > 100
+
+bar :: Int -> Bool
+bar i = x > 100
+  where x = i
+
+run :: State Int Int -> Int -> (Int, Int)
+run (State runState0) s0 = runState0 s0
+
 instance Functor (State s) where
-  (<$>) ::
-    (a -> b)
-    -> State s a
-    -> State s b
-  (<$>) =
-    error "todo: Course.State#(<$>)"
+  (<$>) :: (a -> b) -> State s a -> State s b
+  (<$>) f (State runState0) = let
+    runState1 s0 = bimap f id (runState0 s0)
+    in State runState1
 
 -- | Implement the `Applicative` instance for `State s`.
 --
@@ -94,17 +114,36 @@ instance Functor (State s) where
 -- >>> runState (State (\s -> ((+3), s P.++ ["apple"])) <*> State (\s -> (7, s P.++ ["banana"]))) []
 -- (10,["apple","banana"])
 instance Applicative (State s) where
-  pure ::
-    a
-    -> State s a
-  pure =
-    error "todo: Course.State pure#instance (State s)"
-  (<*>) ::
-    State s (a -> b)
-    -> State s a
-    -> State s b 
-  (<*>) =
-    error "todo: Course.State (<*>)#instance (State s)"
+  pure :: a -> State s a
+  pure x = State (\s0 -> (x, s0))
+
+  (<*>) :: State s (a -> b) -> State s a -> State s b
+  (<*>) stateAB stateA = let
+    -- runStateB :: s -> (b, s)
+    runStateB s0 = let
+      -- out1 :: (a -> b, s)
+      out1 = runState stateAB s0
+      -- out2 :: (a, s)
+      out2 = runState stateA $ snd out2
+      f = fst out1
+      x = fst out2
+      -- y :: b
+      y = f x
+      in (y, snd out2)
+    in State runStateB
+  
+  -- (<*>) (State runStateAB) (State runStateA) = let    
+  --   runStateB :: s -> (b, s)
+  --   runStateB s0 = let
+  --     out1 :: (a->b, s)
+  --     out1 = runStateAB s0
+  --     out2 :: (a, s)
+  --     out2 = runStateA $ snd out1
+  --     b2 :: b
+  --     b2 = abq1 a2
+  --     in (b2, s2)
+  --   in State runStateB
+
 
 -- | Implement the `Bind` instance for `State s`.
 --
