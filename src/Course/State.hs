@@ -153,12 +153,42 @@ instance Applicative (State s) where
 -- >>> let modify f = State (\s -> ((), f s)) in runState (modify (+1) >>= \() -> modify (*2)) 7
 -- ((),16)
 instance Monad (State s) where
-  (=<<) ::
-    (a -> State s b)
-    -> State s a
-    -> State s b
-  (=<<) =
-    error "todo: Course.State (=<<)#instance (State s)"
+  (=<<) :: (a -> State s b) -> State s a -> State s b
+  (=<<) stateF stateA = let
+    runStateB s0 = let
+      (x, s1) = runState stateA s0
+      (y, s2) = runState (stateF x) s1
+      in (y, s2)
+    in State runStateB
+
+
+-- | Run the `State` seeded with `s` and retrieve the resulting state.
+--
+-- prop> \(Fun _ f) -> exec (State f) s == snd (runState (State f) s)
+exec ::
+  State s a -> s -> s
+exec stateSA s0 = snd $ runState stateSA s0
+
+-- | Run the `State` seeded with `s` and retrieve the resulting value.
+--
+-- prop> \(Fun _ f) -> eval (State f) s == fst (runState (State f) s)
+eval :: State s a -> s -> a
+eval stateSA s0 = fst $ runState stateSA s0
+
+-- | A `State` where the state also distributes into the produced value.
+--
+-- >>> runState get 0
+-- (0,0)
+get :: State s s
+get = State (\s0 -> (s0, s0))
+
+
+-- | A `State` where the resulting state is seeded with the given value.
+--
+-- >>> runState (put 1) 0
+-- ((),1)
+put :: s -> State s ()
+put s0 = State (\_ -> ((), s0))
 
 -- | Find the first element in a `List` that satisfies a given predicate.
 -- It is possible that no element is found, hence an `Optional` result.
