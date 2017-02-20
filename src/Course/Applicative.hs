@@ -172,14 +172,16 @@ instance Applicative ((->) t) where
 --
 -- >>> lift2 (+) length sum (listh [4,5,6])
 -- 18
-lift2 ::
-  Applicative f =>
-  (a -> b -> c)
-  -> f a
-  -> f b
-  -> f c
-lift2 =
-  error "todo: Course.Applicative#lift2"
+lift2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
+lift2 func fa fb = let
+  -- ffunc :: f (a -> b -> c)
+  ffunc = pure func
+  -- ffunc' :: f (b -> c)
+  ffunc' = ffunc <*> fa
+  -- fc :: f c
+  fc = ffunc' <*> fb
+  in fc
+
 
 -- | Apply a ternary function in the environment.
 --
@@ -204,14 +206,18 @@ lift2 =
 -- >>> lift3 (\a b c -> a + b + c) length sum product (listh [4,5,6])
 -- 138
 lift3 ::
-  Applicative f =>
-  (a -> b -> c -> d)
-  -> f a
-  -> f b
-  -> f c
-  -> f d
-lift3 =
-  error "todo: Course.Applicative#lift3"
+  Applicative f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
+lift3 func fa fb fc = let
+  -- funccd :: f (c -> d)
+  funccd = lift2 func fa fb
+  in funccd <*> fc
+  
+  -- -- ffunc :: f (a -> b -> c -> d)
+  -- ffunc = pure func
+  -- -- fbcd :: f (b -> c -> d)
+  -- fbcd = ffunc <*> fa
+  -- lift2
+
 
 -- | Apply a quaternary function in the environment.
 --
@@ -243,8 +249,10 @@ lift4 ::
   -> f c
   -> f d
   -> f e
-lift4 =
-  error "todo: Course.Applicative#lift4"
+lift4 func fa fb fc fd = let
+  -- funcde :: f (d -> e)
+  funcde = lift3 func fa fb fc
+  in funcde <*> fd
 
 -- | Apply, discarding the value of the first argument.
 -- Pronounced, right apply.
@@ -265,12 +273,12 @@ lift4 =
 --
 -- prop> Full x *> Full y == Full y
 (*>) ::
-  Applicative f =>
-  f a
-  -> f b
-  -> f b
-(*>) =
-  error "todo: Course.Applicative#(*>)"
+  Applicative f => f a -> f b -> f b
+(*>) fa fb = let
+  -- f (_ -> b)
+  fb' = (\b -> \_ -> b) <$> fb
+  in fb' <*> fa
+
 
 -- | Apply, discarding the value of the second argument.
 -- Pronounced, left apply.
@@ -291,12 +299,9 @@ lift4 =
 --
 -- prop> Full x <* Full y == Full x
 (<*) ::
-  Applicative f =>
-  f b
-  -> f a
-  -> f b
-(<*) =
-  error "todo: Course.Applicative#(<*)"
+  Applicative f => f b -> f a -> f b
+(<*) fb fa = fa *> fb
+
 
 -- | Sequences a list of structures to a structure of list.
 --
@@ -314,12 +319,16 @@ lift4 =
 --
 -- >>> sequence ((*10) :. (+2) :. Nil) 6
 -- [60,8]
-sequence ::
-  Applicative f =>
-  List (f a)
-  -> f (List a)
-sequence =
-  error "todo: Course.Applicative#sequence"
+sequence :: Applicative f => List (f a) -> f (List a)
+sequence lfa =
+  foldRight (\fa fla -> ((\la -> \a -> a:.la) <$> fla) <*> fa) (pure Nil) lfa
+
+  --error "todo sequence"
+-- sequence [] = pure []
+-- sequence (fx:fxs) = 
+
+--   sequence fxs
+
 
 -- | Replicate an effect a given number of times.
 --
@@ -337,13 +346,10 @@ sequence =
 --
 -- >>> replicateA 3 ('a' :. 'b' :. 'c' :. Nil)
 -- ["aaa","aab","aac","aba","abb","abc","aca","acb","acc","baa","bab","bac","bba","bbb","bbc","bca","bcb","bcc","caa","cab","cac","cba","cbb","cbc","cca","ccb","ccc"]
-replicateA ::
-  Applicative f =>
-  Int
-  -> f a
-  -> f (List a)
-replicateA =
-  error "todo: Course.Applicative#replicateA"
+replicateA :: Applicative f => Int -> f a -> f (List a)
+replicateA i fa = let
+  lfa = (\_ -> fa) <$> count i
+  in sequence lfa
 
 -- | Filter a list with a predicate that produces an effect.
 --

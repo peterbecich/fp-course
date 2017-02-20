@@ -114,7 +114,13 @@ length ::
   List a
   -> Int
 length ll =
-  foldRight (\_ count -> count+1) 0 ll
+  foldRight (\_ c -> c+1) 0 ll
+
+-- very wasteful
+count :: Int -> List Int
+count 0 = Nil
+count i = (count (i-1)) ++ (i:.Nil)
+
 
 -- | Map the given function on each element of the list.
 --
