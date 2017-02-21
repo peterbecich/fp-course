@@ -92,6 +92,10 @@ contains :: Eq a => a -> Optional a -> Bool
 contains _ Empty = False
 contains a (Full z) = a == z
 
+foldOptional :: (a -> c) -> c -> Optional a -> c
+foldOptional ac _ (Full a) = ac a
+foldOptional _ c Empty = c
+
 instance P.Functor Optional where
   fmap =
     M.liftM

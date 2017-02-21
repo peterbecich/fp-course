@@ -20,7 +20,8 @@ import Course.Optional
 import qualified System.Environment as E
 import qualified Prelude as P
 import qualified Numeric as N
-
+-- import Course.Traversable
+-- import Course.Applicative (sequence)
 
 -- $setup
 -- >>> import Test.QuickCheck
@@ -116,10 +117,15 @@ length ::
 length ll =
   foldRight (\_ c -> c+1) 0 ll
 
+tenThousandElements = length $ count 10000
+
 -- very wasteful
 count :: Int -> List Int
 count 0 = Nil
 count i = (count (i-1)) ++ (i:.Nil)
+
+countFrom :: Integer -> List Integer
+countFrom i = i :. countFrom (i+1)
 
 
 -- | Map the given function on each element of the list.
@@ -234,8 +240,17 @@ flattenAgain lla = flatMap id lla
 seqOptional ::
   List (Optional a)
   -> Optional (List a)
-seqOptional =
-  error "todo: Course.List#seqOptional"
+seqOptional loa =
+  foldRight (seqOpFold) (Full Nil) loa
+
+seqOpFold :: Optional a -> Optional (List a) -> Optional (List a)
+seqOpFold (Full x) Empty = Full (x:.Nil)
+seqOpFold (Full x) (Full xs) = Full (x:.xs)
+seqOpFold Empty tail@(Full _) = tail
+seqOpFold Empty Empty = Empty
+
+  --sequence loa
+  --sequence' loa
 
 -- | Find the first element in the list matching the predicate.
 --
@@ -253,12 +268,12 @@ seqOptional =
 --
 -- >>> find (const True) infinity
 -- Full 0
-find ::
-  (a -> Bool)
-  -> List a
-  -> Optional a
-find =
-  error "todo: Course.List#find"
+find :: (a -> Bool) -> List a -> Optional a
+find _ Nil = Empty
+find predicate (x:.xs)
+  | predicate x = Full x
+  | otherwise = find predicate xs
+  
 
 -- | Determine if the length of the given list is greater than 4.
 --
@@ -273,11 +288,12 @@ find =
 --
 -- >>> lengthGT4 infinity
 -- True
-lengthGT4 ::
-  List a
-  -> Bool
-lengthGT4 =
-  error "todo: Course.List#lengthGT4"
+lengthGT4 :: List a -> Bool
+lengthGT4 ll = let
+  --found :: Optional (a, Integer)
+  found = find (\(_, i) -> i >= 4) (zipWithIndex ll)
+  in foldOptional (\_ -> True) False found
+
 
 -- | Reverse a list.
 --
@@ -291,7 +307,10 @@ lengthGT4 =
 --
 -- prop> let types = x :: Int in reverse (x :. Nil) == x :. Nil
 reverse :: List a -> List a
-reverse la = foldRight (\x xs -> x :. xs) Nil la
+reverse la = foldLeft (\xs x -> x :. xs) Nil la
+
+
+  -- foldRight (\x xs -> x :. xs) Nil la
 
 
 -- | Produce an infinite `List` that seeds with the given value at its head,
@@ -302,11 +321,13 @@ reverse la = foldRight (\x xs -> x :. xs) Nil la
 --
 -- >>> let (x:.y:.z:.w:._) = produce (*2) 1 in [x,y,z,w]
 -- [1,2,4,8]
-produce ::
-  (a -> a)
-  -> a
-  -> List a
+produce :: (a -> a) -> a -> List a
 produce f x = x :. produce f (f x)
+
+  -- off by one
+  -- y :. produce f y
+  -- where y = f x
+
 
 -- | Do anything other than reverse a list.
 -- Is it even possible?
@@ -320,8 +341,8 @@ produce f x = x :. produce f (f x)
 notReverse ::
   List a
   -> List a
-notReverse =
-  error "todo: Is it even possible?"
+notReverse = id
+
 
 ---- End of list exercises
 
@@ -453,6 +474,9 @@ zipWith f (a:.as) (b:.bs) =
   f a b :. zipWith f as bs
 zipWith _ _  _ =
   Nil
+
+zipWithIndex :: List a -> List (a, Integer)
+zipWithIndex lx = zipWith (\x i -> (x,i)) lx (countFrom 0)
 
 unfoldr ::
   (a -> Optional (b, a))
