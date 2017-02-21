@@ -16,7 +16,8 @@ newtype Compose f g a =
 -- Implement a Functor instance for Compose
 instance (Functor f, Functor g) =>
     Functor (Compose f g) where
-  (<$>) func fga = fmap (\ga -> fmap func ga) fga
+  (<$>) :: (a -> b) -> Compose f g a -> Compose f g b
+  (<$>) func ( Compose fga ) = Compose $ (\ga -> (func <$> ga)) <$> fga
 
 
 instance (Applicative f, Applicative g) =>

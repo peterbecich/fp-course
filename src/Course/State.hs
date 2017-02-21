@@ -93,8 +93,8 @@ bar :: Int -> Bool
 bar i = x > 100
   where x = i
 
-run :: State Int Int -> Int -> (Int, Int)
-run (State runState0) s0 = runState0 s0
+run' :: State Int Int -> Int -> (Int, Int)
+run' (State runState0) s0 = runState0 s0
 
 instance Functor (State s) where
   (<$>) :: (a -> b) -> State s a -> State s b
