@@ -63,6 +63,7 @@ instance Functor Id where
 instance Functor List where
   (<$>) :: (a -> b) -> List a -> List b
   (<$>) f (x:.xs) = (f x :. (f <$> xs))
+  (<$>) _ Nil = Nil
 
 
 -- | Maps a function on the Optional functor.

@@ -10,6 +10,7 @@ import Course.ExactlyOne
 import Course.Functor
 import Course.List
 import Course.Optional
+-- import Course.Traversable (traverse)
 import qualified Prelude as P(fmap, return, (>>=))
 
 -- | All instances of the `Applicative` type-class must satisfy three laws.
@@ -346,6 +347,7 @@ sequence lfa =
 --
 -- >>> replicateA 3 ('a' :. 'b' :. 'c' :. Nil)
 -- ["aaa","aab","aac","aba","abb","abc","aca","acb","acc","baa","bab","bac","bba","bbb","bbc","bca","bcb","bcc","caa","cab","cac","cba","cbb","cbc","cca","ccb","ccc"]
+-- taken from FP in Scala
 replicateA :: Applicative f => Int -> f a -> f (List a)
 replicateA i fa = let
   lfa = (\_ -> fa) <$> count i
@@ -356,6 +358,7 @@ replicateA i fa = let
 -- >>> filtering (ExactlyOne . even) (4 :. 5 :. 6 :. Nil)
 -- ExactlyOne [4,6]
 --
+-- great example
 -- >>> filtering (\a -> if a > 13 then Empty else Full (a <= 7)) (4 :. 5 :. 6 :. Nil)
 -- Full [4,5,6]
 --
@@ -370,14 +373,42 @@ replicateA i fa = let
 --
 -- >>> filtering (const $ True :. True :.  Nil) (1 :. 2 :. 3 :. Nil)
 -- [[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3]]
---
-filtering ::
-  Applicative f =>
-  (a -> f Bool)
-  -> List a
-  -> f (List a)
-filtering =
-  error "todo: Course.Applicative#filtering"
+-- traversable answer from FP in Scala
+-- http://stackoverflow.com/questions/24938589/filtering-applicatives
+filteringCombine :: Applicative f => f a -> f (List a) -> f (List a)
+filteringCombine fa fla = lift2 (:.) fa fla
+
+filtering :: Applicative f => (a -> f Bool) -> List a -> f (List a)
+filtering _ Nil = pure Nil
+filtering func (x:.xs) = let
+  -- f bool
+  fbool = func x
+  fhead = pure x
+  ftail = filtering func xs
+  toLift bool y tail =
+    if (bool)
+    then y:.tail
+    else tail
+  in lift3 toLift fbool fhead ftail
+  
+  -- Bool -> f (List a)
+  -- would only work with a Monad
+  -- fltr bool =
+  --   if (bool)
+  --   then filteringCombine (pure x) (filtering func xs)
+  --   else filtering func xs
+  
+
+
+-- filtering func la = let
+--   func' a = (\_ -> a) <$> (func a)
+--   in traverse func' la
+-- let
+-- func' a = (a, func a)
+-- lfabool = func' <$> la
+  
+  
+
 
 -----------------------
 -- SUPPORT LIBRARIES --

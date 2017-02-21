@@ -26,6 +26,12 @@ class Functor t => Traversable t where
     -> t a
     -> f (t b)
 
+-- sequence :: Applicative t => List (t a) -> t (List a)
+-- sequence lta = let
+--   id' ta = ta
+--   in traverse id' lta
+
+
 instance Traversable List where
   traverse ::
     Applicative f =>

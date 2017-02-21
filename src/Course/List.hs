@@ -132,6 +132,7 @@ count i = (count (i-1)) ++ (i:.Nil)
 -- prop> map id x == x
 map :: (a -> b) -> List a -> List b
 map f (x:.xs) = (f x :. map f xs)
+map _ Nil = Nil
 
 -- | Return elements satisfying the given predicate.
 --
@@ -198,6 +199,7 @@ flatten lla =
 -- prop> flatMap id (x :: List (List Int)) == flatten x
 flatMap :: (a -> List b) -> List a -> List b
 flatMap f (x :. xs) = f x ++ flatMap f xs
+flatMap _ Nil = Nil
 
 -- | Flatten a list of lists to a list (again).
 -- HOWEVER, this time use the /flatMap/ function that you just wrote.

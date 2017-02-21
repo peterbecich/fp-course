@@ -16,8 +16,8 @@ newtype Compose f g a =
 -- Implement a Functor instance for Compose
 instance (Functor f, Functor g) =>
     Functor (Compose f g) where
-  (<$>) =
-    error "todo: Course.Compose (<$>)#instance (Compose f g)"
+  (<$>) func fga = fmap (\ga -> fmap func ga) fga
+
 
 instance (Applicative f, Applicative g) =>
   Applicative (Compose f g) where
@@ -28,6 +28,8 @@ instance (Applicative f, Applicative g) =>
   (<*>) =
     error "todo: Course.Compose (<*>)#instance (Compose f g)"
 
+-- monads in general do not compose
+-- they always compose with an instance of Traversable
 instance (Monad f, Monad g) =>
   Monad (Compose f g) where
 -- Implement the (=<<) function for a Monad instance for Compose
