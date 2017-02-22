@@ -117,6 +117,7 @@ length ::
 length ll =
   foldRight (\_ c -> c+1) 0 ll
 
+tenThousandElements :: Int
 tenThousandElements = length $ count 10000
 
 -- very wasteful
@@ -237,17 +238,13 @@ flattenAgain lla = flatMap id lla
 --
 -- >>> seqOptional (Empty :. map Full infinity)
 -- Empty
-seqOptional ::
-  List (Optional a)
-  -> Optional (List a)
-seqOptional loa =
-  foldRight (seqOpFold) (Full Nil) loa
+seqOptional :: List (Optional a) -> Optional (List a)
+seqOptional loa = foldRight (seqOpFold) (Full Nil) loa
 
 seqOpFold :: Optional a -> Optional (List a) -> Optional (List a)
-seqOpFold (Full x) Empty = Full (x:.Nil)
+seqOpFold (Full _) Empty = Empty
 seqOpFold (Full x) (Full xs) = Full (x:.xs)
-seqOpFold Empty tail@(Full _) = tail
-seqOpFold Empty Empty = Empty
+seqOpFold Empty _ = Empty
 
   --sequence loa
   --sequence' loa
@@ -338,10 +335,8 @@ produce f x = x :. produce f (f x)
 -- prop> let types = x :: List Int in notReverse x ++ notReverse y == notReverse (y ++ x)
 --
 -- prop> let types = x :: Int in notReverse (x :. Nil) == x :. Nil
-notReverse ::
-  List a
-  -> List a
-notReverse = id
+notReverse :: List a -> List a
+notReverse = reverse
 
 
 ---- End of list exercises
