@@ -82,9 +82,11 @@ instance Functor Optional where
 --
 -- >>> ((+1) <$> (*2)) 8
 -- 17
+
+-- http://hackage.haskell.org/package/mtl-2.2.1/docs/Control-Monad-Reader.html
 instance Functor ((->) t) where
   (<$>) :: (a -> b) -> ((->) t a) -> ((->) t b)
-  (<$>) = error "todo functor reader"
+  (<$>) func functa = func . functa
 --  (<$>) func ((->) t x) = 
 
 
