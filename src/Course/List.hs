@@ -457,8 +457,7 @@ zip ::
   List a
   -> List b
   -> List (a, b)
-zip =
-  zipWith (,)
+zip lx ly = zipWith (\x y -> (x,y)) lx ly -- could be partially applied
 
 zipWith ::
   (a -> b -> c)

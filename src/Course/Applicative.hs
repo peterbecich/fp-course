@@ -10,7 +10,6 @@ import Course.ExactlyOne
 import Course.Functor
 import Course.List
 import Course.Optional
--- import Course.Traversable (traverse)
 import qualified Prelude as P(fmap, return, (>>=))
 
 -- | All instances of the `Applicative` type-class must satisfy three laws.
@@ -41,7 +40,7 @@ infixl 4 <*>
 -- >>> (+1) <$> (1 :. 2 :. 3 :. Nil)
 -- [2,3,4]
 (<$>) :: Applicative f => (a -> b) -> f a -> f b
-(<$>) f fx = pure f <*> fx
+(<$>) f fx = (pure f) <*> fx
 
 -- | Insert into Id.
 --
@@ -69,9 +68,8 @@ instance Applicative Id where
   pure :: a -> Id a
   pure x = Id x
   (<*>) :: Id (a -> b) -> Id a -> Id b
-  (<*>) (Id f) (Id x) = Id $ f x
-
-
+  (<*>) (Id f) (Id x) = Id (f x)
+  
 -- | Insert into a List.
 --
 -- prop> pure x == x :. Nil
@@ -82,9 +80,10 @@ instance Applicative List where
   pure :: a -> List a
   pure x = x :. Nil
   (<*>) :: List (a -> b) -> List a -> List b
-  (<*>) llf llx = let
-    zipped = zip llf llx
+  (<*>) llfunc llx = let
+    zipped = zip llfunc llx
     in (\tup -> (fst tup) (snd tup)) <$> zipped
+  -- (<*>) = error "todo"
 
 -- | Witness that all things with (<*>) and pure also have (<$>).
 --
@@ -144,14 +143,13 @@ instance Applicative ((->) t) where
   pure ::
     a
     -> ((->) t a)
-  pure =
-    error "todo: Course.Applicative pure#((->) t)"
-  (<*>) ::
-    ((->) t (a -> b))
-    -> ((->) t a)
-    -> ((->) t b)
-  (<*>) =
-    error "todo: Course.Apply (<*>)#instance ((->) t)"
+  pure x = (\_ -> x)
+
+  (<*>) :: ((->) t (a -> b)) -> ((->) t a) -> ((->) t b)
+  (<*>) functab functa t = let
+    funcab = functab t
+    a = functa t
+    in funcab a
 
 
 -- | Apply a binary function in the environment.
@@ -250,10 +248,11 @@ lift4 ::
   -> f c
   -> f d
   -> f e
-lift4 func fa fb fc fd = let
-  -- funcde :: f (d -> e)
-  funcde = lift3 func fa fb fc
-  in funcde <*> fd
+lift4 = error "todo"
+-- lift4 func fa fb fc fd = let
+--   -- funcde :: f (d -> e)
+--   funcde = lift3 func fa fb fc
+--   in funcde <*> fd
 
 -- | Apply, discarding the value of the first argument.
 -- Pronounced, right apply.
@@ -275,10 +274,11 @@ lift4 func fa fb fc fd = let
 -- prop> Full x *> Full y == Full y
 (*>) ::
   Applicative f => f a -> f b -> f b
-(*>) fa fb = let
-  -- f (_ -> b)
-  fb' = (\b -> \_ -> b) <$> fb
-  in fb' <*> fa
+(*>) = error "todo"
+-- (*>) fa fb = let
+--   -- f (_ -> b)
+--   fb' = (\b -> \_ -> b) <$> fb
+--   in fb' <*> fa
 
 
 -- | Apply, discarding the value of the second argument.
@@ -301,7 +301,8 @@ lift4 func fa fb fc fd = let
 -- prop> Full x <* Full y == Full x
 (<*) ::
   Applicative f => f b -> f a -> f b
-(<*) fb fa = fa *> fb
+(<*) = error "todo"
+-- (<*) fb fa = fa *> fb
 
 
 -- | Sequences a list of structures to a structure of list.
@@ -321,8 +322,9 @@ lift4 func fa fb fc fd = let
 -- >>> sequence ((*10) :. (+2) :. Nil) 6
 -- [60,8]
 sequence :: Applicative f => List (f a) -> f (List a)
-sequence lfa =
-  foldRight (\fa fla -> ((\la -> \a -> a:.la) <$> fla) <*> fa) (pure Nil) lfa
+sequence = error "todo"
+-- sequence lfa =
+--   foldRight (\fa fla -> ((\la -> \a -> a:.la) <$> fla) <*> fa) (pure Nil) lfa
 
   --error "todo sequence"
 -- sequence [] = pure []
@@ -349,9 +351,11 @@ sequence lfa =
 -- ["aaa","aab","aac","aba","abb","abc","aca","acb","acc","baa","bab","bac","bba","bbb","bbc","bca","bcb","bcc","caa","cab","cac","cba","cbb","cbc","cca","ccb","ccc"]
 -- taken from FP in Scala
 replicateA :: Applicative f => Int -> f a -> f (List a)
-replicateA i fa = let
-  lfa = (\_ -> fa) <$> count i
-  in sequence lfa
+replicateA = error "todo"
+
+-- replicateA i fa = let
+--   lfa = (\_ -> fa) <$> count i
+--   in sequence lfa
 
 -- | Filter a list with a predicate that produces an effect.
 --
@@ -373,6 +377,9 @@ replicateA i fa = let
 --
 -- >>> filtering (const $ True :. True :.  Nil) (1 :. 2 :. 3 :. Nil)
 -- [[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3]]
+
+
+
 -- traversable answer from FP in Scala
 -- http://stackoverflow.com/questions/24938589/filtering-applicatives
 filteringCombine :: Applicative f => f a -> f (List a) -> f (List a)
