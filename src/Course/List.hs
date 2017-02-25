@@ -20,8 +20,7 @@ import Course.Optional
 import qualified System.Environment as E
 import qualified Prelude as P
 import qualified Numeric as N
--- import Course.Traversable
--- import Course.Applicative (sequence)
+
 
 -- $setup
 -- >>> import Test.QuickCheck

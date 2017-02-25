@@ -23,6 +23,7 @@ main =
         : "-optP-include"
         : "-optPdist/build/autogen/cabal_macros.h"
         : "-hide-all-packages"
+        : "-Wno-orphans"
         : map ("-package="++) deps ++ [source]
 
 sourceDirectories ::
@@ -42,25 +43,25 @@ preferredOrderFirst sources =
 -- in the list below.
 preferredOrder :: [String]
 preferredOrder = map (\f -> "src/Course" </> f <.> "hs") [
-      "List"
-    , "Functor"
-    , "Applicative"
-    , "Monad"
-    , "FileIO"
-    , "State"
-    , "StateT"
-    , "Extend"
-    , "Comonad"
-    , "Compose"
-    , "Traversable"
-    , "ListZipper"
-    , "Parser"
-    , "MoreParser"
-    , "JsonParser"
-    , "Interactive"
-    , "Anagrams"
-    , "FastAnagrams"
-    , "Cheque"
+  "List"
+  ,"Functor"
+    -- , "Applicative"
+    -- , "Monad"
+    -- , "FileIO"
+    -- , "State"
+    -- , "StateT"
+    -- , "Extend"
+    -- , "Comonad"
+    -- , "Compose"
+    -- , "Traversable"
+    -- , "ListZipper"
+    -- , "Parser"
+    -- , "MoreParser"
+    -- , "JsonParser"
+    -- , "Interactive"
+    -- , "Anagrams"
+    -- , "FastAnagrams"
+    -- , "Cheque"
     ]
 
 isSourceFile ::

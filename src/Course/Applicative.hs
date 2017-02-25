@@ -65,9 +65,9 @@ instance Applicative ExactlyOne where
 -- >>> Id (+10) <*> Id 8
 -- Id 18
 instance Applicative Id where
-  pure :: a -> Id a
+  -- pure :: a -> Id a
   pure x = Id x
-  (<*>) :: Id (a -> b) -> Id a -> Id b
+  -- (<*>) :: Id (a -> b) -> Id a -> Id b
   (<*>) (Id f) (Id x) = Id (f x)
   
 -- | Insert into a List.
@@ -77,9 +77,9 @@ instance Applicative Id where
 -- >>> (+1) :. (*2) :. Nil <*> 1 :. 2 :. 3 :. Nil
 -- [2,3,4,2,4,6]
 instance Applicative List where
-  pure :: a -> List a
+  -- pure :: a -> List a
   pure x = x :. Nil
-  (<*>) :: List (a -> b) -> List a -> List b
+  -- (<*>) :: List (a -> b) -> List a -> List b
   (<*>) llfunc llx = let
     zipped = zip llfunc llx
     in (\tup -> (fst tup) (snd tup)) <$> zipped
@@ -116,9 +116,9 @@ instance Applicative List where
 -- >>> Full (+8) <*> Empty
 -- Empty
 instance Applicative Optional where
-  pure :: a -> Optional a
+  -- pure :: a -> Optional a
   pure x = Full x
-  (<*>) :: Optional (a -> b) -> Optional a -> Optional b
+  -- (<*>) :: Optional (a -> b) -> Optional a -> Optional b
   (<*>) opf opx = applyOptional opf opx
 
 -- | Insert into a constant function.
@@ -140,12 +140,10 @@ instance Applicative Optional where
 --
 -- prop> pure x y == x
 instance Applicative ((->) t) where
-  pure ::
-    a
-    -> ((->) t a)
+  -- pure :: a  -> ((->) t a)
   pure x = (\_ -> x)
 
-  (<*>) :: ((->) t (a -> b)) -> ((->) t a) -> ((->) t b)
+  -- (<*>) :: ((->) t (a -> b)) -> ((->) t a) -> ((->) t b)
   (<*>) functab functa t = let
     funcab = functab t
     a = functa t
