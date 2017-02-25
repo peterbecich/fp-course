@@ -39,8 +39,8 @@ infixl 4 <*>
 --
 -- >>> (+1) <$> (1 :. 2 :. 3 :. Nil)
 -- [2,3,4]
-(<$>) :: Applicative f => (a -> b) -> f a -> f b
-(<$>) f fx = (pure f) <*> fx
+(<$$>) :: Applicative f => (a -> b) -> f a -> f b
+(<$$>) f fx = (pure f) <*> fx
 
 -- | Insert into Id.
 --
@@ -65,9 +65,7 @@ instance Applicative ExactlyOne where
 -- >>> Id (+10) <*> Id 8
 -- Id 18
 instance Applicative Id where
-  -- pure :: a -> Id a
   pure x = Id x
-  -- (<*>) :: Id (a -> b) -> Id a -> Id b
   (<*>) (Id f) (Id x) = Id (f x)
   
 -- | Insert into a List.
@@ -77,13 +75,12 @@ instance Applicative Id where
 -- >>> (+1) :. (*2) :. Nil <*> 1 :. 2 :. 3 :. Nil
 -- [2,3,4,2,4,6]
 instance Applicative List where
-  -- pure :: a -> List a
   pure x = x :. Nil
-  -- (<*>) :: List (a -> b) -> List a -> List b
   (<*>) llfunc llx = let
-    zipped = zip llfunc llx
-    in (\tup -> (fst tup) (snd tup)) <$> zipped
-  -- (<*>) = error "todo"
+    mapped = (\func -> func <$> llx) <$> llfunc
+    in flatten mapped
+
+    -- zipWith (\f x -> f x) llfunc llx
 
 -- | Witness that all things with (<*>) and pure also have (<$>).
 --
@@ -116,9 +113,7 @@ instance Applicative List where
 -- >>> Full (+8) <*> Empty
 -- Empty
 instance Applicative Optional where
-  -- pure :: a -> Optional a
   pure x = Full x
-  -- (<*>) :: Optional (a -> b) -> Optional a -> Optional b
   (<*>) opf opx = applyOptional opf opx
 
 -- | Insert into a constant function.
@@ -140,10 +135,7 @@ instance Applicative Optional where
 --
 -- prop> pure x y == x
 instance Applicative ((->) t) where
-  -- pure :: a  -> ((->) t a)
   pure x = (\_ -> x)
-
-  -- (<*>) :: ((->) t (a -> b)) -> ((->) t a) -> ((->) t b)
   (<*>) functab functa t = let
     funcab = functab t
     a = functa t
@@ -246,11 +238,10 @@ lift4 ::
   -> f c
   -> f d
   -> f e
-lift4 = error "todo"
--- lift4 func fa fb fc fd = let
---   -- funcde :: f (d -> e)
---   funcde = lift3 func fa fb fc
---   in funcde <*> fd
+lift4 func fa fb fc fd = let
+  -- funcde :: f (d -> e)
+  funcde = lift3 func fa fb fc
+  in funcde <*> fd
 
 -- | Apply, discarding the value of the first argument.
 -- Pronounced, right apply.
@@ -270,13 +261,11 @@ lift4 = error "todo"
 -- prop> (a :. b :. c :. Nil) *> (x :. y :. z :. Nil) == (x :. y :. z :. x :. y :. z :. x :. y :. z :. Nil)
 --
 -- prop> Full x *> Full y == Full y
-(*>) ::
-  Applicative f => f a -> f b -> f b
-(*>) = error "todo"
--- (*>) fa fb = let
---   -- f (_ -> b)
---   fb' = (\b -> \_ -> b) <$> fb
---   in fb' <*> fa
+(*>) :: Applicative f => f a -> f b -> f b
+(*>) fa fb = let
+  -- f (_ -> b)
+  fb' = (\b -> \_ -> b) <$> fb
+  in fb' <*> fa
 
 
 -- | Apply, discarding the value of the second argument.
@@ -297,10 +286,10 @@ lift4 = error "todo"
 -- prop> (x :. y :. z :. Nil) <* (a :. b :. c :. Nil) == (x :. x :. x :. y :. y :. y :. z :. z :. z :. Nil)
 --
 -- prop> Full x <* Full y == Full x
-(<*) ::
-  Applicative f => f b -> f a -> f b
+(<*) :: Applicative f => f b -> f a -> f b
 (<*) = error "todo"
 -- (<*) fb fa = fa *> fb
+
 
 
 -- | Sequences a list of structures to a structure of list.
@@ -395,22 +384,116 @@ filtering func (x:.xs) = let
     then y:.tail
     else tail
   in lift3 toLift fbool fhead ftail
+
+-- -- | Sequences a list of structures to a structure of list.
+-- --
+-- -- >>> sequence (Id 7 :. Id 8 :. Id 9 :. Nil)
+-- -- Id [7,8,9]
+-- --
+-- -- >>> sequence ((1 :. 2 :. 3 :. Nil) :. (1 :. 2 :. Nil) :. Nil)
+-- -- [[1,1],[1,2],[2,1],[2,2],[3,1],[3,2]]
+-- --
+-- -- >>> sequence (Full 7 :. Empty :. Nil)
+-- -- Empty
+-- --
+-- -- >>> sequence (Full 7 :. Full 8 :. Nil)
+-- -- Full [7,8]
+-- --
+-- -- >>> sequence ((*10) :. (+2) :. Nil) 6
+-- -- [60,8]
+-- sequence :: Applicative f => List (f a) -> f (List a)
+-- sequence = error "todo"
+-- -- sequence lfa =
+-- --   foldRight (\fa fla -> ((\la -> \a -> a:.la) <$> fla) <*> fa) (pure Nil) lfa
+
+--   --error "todo sequence"
+-- -- sequence [] = pure []
+-- -- sequence (fx:fxs) = 
+
+-- --   sequence fxs
+
+
+-- -- | Replicate an effect a given number of times.
+-- --
+-- -- >>> replicateA 4 (Id "hi")
+-- -- Id ["hi","hi","hi","hi"]
+-- --
+-- -- >>> replicateA 4 (Full "hi")
+-- -- Full ["hi","hi","hi","hi"]
+-- --
+-- -- >>> replicateA 4 Empty
+-- -- Empty
+-- --
+-- -- >>> replicateA 4 (*2) 5
+-- -- [10,10,10,10]
+-- --
+-- -- >>> replicateA 3 ('a' :. 'b' :. 'c' :. Nil)
+-- -- ["aaa","aab","aac","aba","abb","abc","aca","acb","acc","baa","bab","bac","bba","bbb","bbc","bca","bcb","bcc","caa","cab","cac","cba","cbb","cbc","cca","ccb","ccc"]
+-- -- taken from FP in Scala
+-- replicateA :: Applicative f => Int -> f a -> f (List a)
+-- replicateA = error "todo"
+
+-- -- replicateA i fa = let
+-- --   lfa = (\_ -> fa) <$> count i
+-- --   in sequence lfa
+
+-- -- | Filter a list with a predicate that produces an effect.
+-- --
+-- -- >>> filtering (Id . even) (4 :. 5 :. 6 :. Nil)
+-- -- Id [4,6]
+-- --
+-- -- great example
+-- -- >>> filtering (\a -> if a > 13 then Empty else Full (a <= 7)) (4 :. 5 :. 6 :. Nil)
+-- -- Full [4,5,6]
+-- --
+-- -- >>> filtering (\a -> if a > 13 then Empty else Full (a <= 7)) (4 :. 5 :. 6 :. 7 :. 8 :. 9 :. Nil)
+-- -- Full [4,5,6,7]
+-- --
+-- -- >>> filtering (\a -> if a > 13 then Empty else Full (a <= 7)) (4 :. 5 :. 6 :. 13 :. 14 :. Nil)
+-- -- Empty
+-- --
+-- -- >>> filtering (>) (4 :. 5 :. 6 :. 7 :. 8 :. 9 :. 10 :. 11 :. 12 :. Nil) 8
+-- -- [9,10,11,12]
+-- --
+-- -- >>> filtering (const $ True :. True :.  Nil) (1 :. 2 :. 3 :. Nil)
+-- -- [[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3]]
+
+
+
+-- -- traversable answer from FP in Scala
+-- -- http://stackoverflow.com/questions/24938589/filtering-applicatives
+-- filteringCombine :: Applicative f => f a -> f (List a) -> f (List a)
+-- filteringCombine fa fla = lift2 (:.) fa fla
+
+-- filtering :: Applicative f => (a -> f Bool) -> List a -> f (List a)
+-- filtering _ Nil = pure Nil
+-- filtering func (x:.xs) = let
+--   -- f bool
+--   fbool = func x
+--   fhead = pure x
+--   ftail = filtering func xs
+--   toLift bool y tail =
+--     if (bool)
+--     then y:.tail
+--     else tail
+--   in lift3 toLift fbool fhead ftail
+
   
-  -- Bool -> f (List a)
-  -- would only work with a Monad
-  -- fltr bool =
-  --   if (bool)
-  --   then filteringCombine (pure x) (filtering func xs)
-  --   else filtering func xs
+--   -- Bool -> f (List a)
+--   -- would only work with a Monad
+--   -- fltr bool =
+--   --   if (bool)
+--   --   then filteringCombine (pure x) (filtering func xs)
+--   --   else filtering func xs
   
 
 
--- filtering func la = let
---   func' a = (\_ -> a) <$> (func a)
---   in traverse func' la
--- let
--- func' a = (a, func a)
--- lfabool = func' <$> la
+-- -- filtering func la = let
+-- --   func' a = (\_ -> a) <$> (func a)
+-- --   in traverse func' la
+-- -- let
+-- -- func' a = (a, func a)
+-- -- lfabool = func' <$> la
   
   
 
