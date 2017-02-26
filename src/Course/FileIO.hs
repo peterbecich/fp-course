@@ -11,6 +11,9 @@ import Course.Monad
 import Course.Functor
 import Course.List
 
+-- import Data.List ((!!))
+--import Base.Prelude (fromInteger)
+
 {-
 
 Useful Functions --
@@ -77,49 +80,46 @@ the contents of c
 -}
 
 -- /Tip:/ use @getArgs@ and @run@
-main ::
-  IO ()
-main =
-  error "todo: Course.FileIO#main"
+-- main :: IO ()
+-- main = ((\l -> l !! 0) <$> getArgs) >>= run
+
 
 type FilePath = Chars
 
 -- /Tip:/ Use @getFiles@ and @printFiles@.
-run ::
-  FilePath
-  -> IO ()
-run =
-  error "todo: Course.FileIO#run"
+run :: FilePath -> IO ()
+run path = do
+  directory <- getFile path :: IO (FilePath, Chars)
+  _ <- uncurry printFile directory :: IO ()
+  -- let lns = lines $ snd directory
+  fls <- getFiles (lines $ snd directory) :: IO (List (FilePath, Chars))
+  printFiles fls
 
--- Given a list of file names, return list of (file name and file contents).
--- Use @getFile@.
-getFiles ::
-  List FilePath
-  -> IO (List (FilePath, Chars))
-getFiles =
-  error "todo: Course.FileIO#getFiles"
 
--- Given a file name, return (file name and file contents).
--- Use @readFile@.
-getFile ::
-  FilePath
-  -> IO (FilePath, Chars)
-getFile =
-  error "todo: Course.FileIO#getFile"
+getFiles :: List FilePath -> IO (List (FilePath, Chars))
+getFiles lpath = let
+  lio = getFile <$> lpath
+  in sequence lio
 
--- Given a list of (file name and file contents), print each.
--- Use @printFile@.
-printFiles ::
-  List (FilePath, Chars)
-  -> IO ()
-printFiles =
-  error "todo: Course.FileIO#printFiles"
 
--- Given the file name, and file contents, print them.
--- Use @putStrLn@.
-printFile ::
-  FilePath
-  -> Chars
-  -> IO ()
-printFile =
-  error "todo: Course.FileIO#printFile"
+getFile :: FilePath -> IO (FilePath, Chars)
+getFile path = (\chrs -> (path, chrs)) <$> (readFile path)
+
+
+a = "./share/a.txt"
+b = "./share/b.txt"
+c = "./share/c.txt"
+
+printSomeFiles = printFiles ((a,"a") :. (b,"b") :. (c,"c") :. Nil)
+
+printFiles :: List (FilePath, Chars) -> IO ()
+printFiles ll = let
+  lio = (uncurry printFile) <$> ll
+  in sequence_ lio
+
+
+printFile :: FilePath -> Chars -> IO ()
+printFile path header =
+  putStrLn header >> readFile(path) >>= putStrLn
+
+

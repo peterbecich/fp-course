@@ -316,8 +316,11 @@ sequence :: Applicative f => List (f a) -> f (List a)
 sequence lfa =
   foldRight (\fa fla -> (lift2 (:.) fa fla)) (pure Nil) lfa
 
-
---   sequence fxs
+-- throw away the result
+sequence_ :: Applicative f => List (f a) -> f ()
+sequence_ lfa =
+  foldRight (\fa fla -> fa *> fla) (pure ()) lfa
+  -- foldRight (\_ _ -> pure ()) (pure ()) lfa
 
 -- ((\la -> \a -> a:.la) <$$> fla) <*> fa
 

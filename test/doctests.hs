@@ -23,8 +23,9 @@ main =
         : "-optP-include"
         : "-optPdist/build/autogen/cabal_macros.h"
         : "-hide-all-packages"
-        : "-Wno-orphans"
         : map ("-package="++) deps ++ [source]
+
+-- : "-Wno-orphans"
 
 sourceDirectories ::
   [FilePath]
@@ -45,30 +46,27 @@ preferredOrder :: [String]
 preferredOrder = map (\f -> "src/Course" </> f <.> "hs") [
   "List"
   ,"Functor"
-    -- , "Applicative"
-    -- , "Monad"
-    -- , "FileIO"
-    -- , "State"
-    -- , "StateT"
-    -- , "Extend"
-    -- , "Comonad"
-    -- , "Compose"
-    -- , "Traversable"
-    -- , "ListZipper"
-    -- , "Parser"
-    -- , "MoreParser"
-    -- , "JsonParser"
-    -- , "Interactive"
-    -- , "Anagrams"
-    -- , "FastAnagrams"
-    -- , "Cheque"
-    ]
+  , "Applicative"
+  , "Monad"
+  , "FileIO"
+  , "State"
+  , "StateT"
+  , "Extend"
+  , "Comonad"
+  , "Compose"
+  , "Traversable"
+  , "ListZipper"
+  , "Parser"
+  , "MoreParser"
+  , "JsonParser"
+  , "Interactive"
+  , "Anagrams"
+  , "FastAnagrams"
+  , "Cheque"
+  ]
 
-isSourceFile ::
-  FilePath
-  -> Bool
-isSourceFile p =
-  and [takeFileName p /= "Setup.hs", isSuffixOf ".hs" p]
+isSourceFile :: FilePath -> Bool
+isSourceFile p = and [takeFileName p /= "Setup.hs", isSuffixOf ".hs" p]
 
 getSources :: IO [FilePath]
 getSources =

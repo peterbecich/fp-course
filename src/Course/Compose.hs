@@ -23,16 +23,23 @@ instance (Functor f, Functor g) =>
 instance (Applicative f, Applicative g) =>
   Applicative (Compose f g) where
 -- Implement the pure function for an Applicative instance for Compose
-  pure =
-    error "todo: Course.Compose pure#instance (Compose f g)"
+  pure x = let
+    -- gx :: g x
+    gx = pure x
+    -- fgx :: f ( g x )
+    fgx = pure gx
+    in Compose fgx
+
 -- Implement the (<*>) function for an Applicative instance for Compose
-  (<*>) =
-    error "todo: Course.Compose (<*>)#instance (Compose f g)"
+  (<*>) (Compose fgab) (Compose fga) =
+    Compose $ lift2 (\gab ga -> lift2 (\ab a -> ab a) gab ga) fgab fga
+
 
 -- monads in general do not compose
 -- they always compose with an instance of Traversable
+-- requires sequence method of Traversable
 instance (Monad f, Monad g) =>
   Monad (Compose f g) where
 -- Implement the (=<<) function for a Monad instance for Compose
-  (=<<) =
-    error "todo: Course.Compose (<<=)#instance (Compose f g)"
+  (=<<) aCfgb (Compose fga) = error "needs Traversable"
+    

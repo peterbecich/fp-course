@@ -4,6 +4,7 @@
 
 module Course.Traversable where
 
+import Course.Core
 import Course.Functor
 import Course.Applicative
 import Course.List
@@ -31,6 +32,8 @@ sequence' lta = let
   id' ta = ta
   in traverse id' lta
 
+sequence'' :: (Traversable f, Applicative g) => f (g a) -> g (f a)
+sequence'' fga = error "todo"
 
 instance Traversable List where
   traverse ::
