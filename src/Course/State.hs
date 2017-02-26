@@ -116,34 +116,30 @@ instance Functor (State s) where
 instance Applicative (State s) where
   pure :: a -> State s a
   pure x = State (\s0 -> (x, s0))
-
   (<*>) :: State s (a -> b) -> State s a -> State s b
   (<*>) stateAB stateA = let
-    -- runStateB :: s -> (b, s)
     runStateB s0 = let
-      -- out1 :: (a -> b, s)
-      out1 = runState stateAB s0
-      -- out2 :: (a, s)
-      out2 = runState stateA $ snd out2
-      f = fst out1
-      x = fst out2
-      -- y :: b
-      y = f x
-      in (y, snd out2)
+      (ab, s1) = runState stateAB s0
+      (a, s2) = runState stateA s1
+      in (ab a, s2)
     in State runStateB
-  
-  -- (<*>) (State runStateAB) (State runStateA) = let    
-  --   runStateB :: s -> (b, s)
-  --   runStateB s0 = let
-  --     out1 :: (a->b, s)
-  --     out1 = runStateAB s0
-  --     out2 :: (a, s)
-  --     out2 = runStateA $ snd out1
-  --     b2 :: b
-  --     b2 = abq1 a2
-  --     in (b2, s2)
-  --   in State runStateB
 
+
+
+                                     
+  -- (<*>) stateAB stateA = let
+  --   -- runStateB :: s -> (b, s)
+  --   runStateB s0 = let
+  --     -- out1 :: (a -> b, s)
+  --     out1 = runState stateAB s0
+  --     -- out2 :: (a, s)
+  --     out2 = runState stateA $ snd out2
+  --     f = fst out1
+  --     x = fst out2
+  --     -- y :: b
+  --     y = f x
+  --     in (y, snd out2)
+  --   in State runStateB
 
 -- | Implement the `Bind` instance for `State s`.
 --
@@ -205,12 +201,13 @@ put s0 = State (\_ -> ((), s0))
 -- >>> let p x = (\s -> (const $ pure (x == 'i')) =<< put (1+s)) =<< get in runState (findM p $ listh ['a'..'h']) 0
 -- (Empty,8)
 findM :: Monad f => (a -> f Bool) -> List a -> f (Optional a)
-findM g (x:.xs) = error "todo findM"
--- let
---   fBool :: f Bool
---   fBool = g x
---   h b = if (b==True) then Full x else findM g xs
---   in h =<< fBool
+findM g (x:.xs) = let
+  -- fBool :: f Bool
+  fBool = g x
+  -- h :: Bool -> f (Optional a)
+  h b = if (b==True) then pure (Full x) else findM g xs
+  in h =<< fBool
+findM _ Nil = pure Empty
 
 
 -- | Find the first element in a `List` that repeats.
@@ -220,12 +217,9 @@ findM g (x:.xs) = error "todo findM"
 --
 -- prop> case firstRepeat xs of Empty -> let xs' = hlist xs in nub xs' == xs'; Full x -> length (filter (== x) xs) > 1
 -- prop> case firstRepeat xs of Empty -> True; Full x -> let (l, (rx :. rs)) = span (/= x) xs in let (l2, r2) = span (/= x) rs in let l3 = hlist (l ++ (rx :. Nil) ++ l2) in nub l3 == l3
-firstRepeat ::
-  Ord a =>
-  List a
-  -> Optional a
-firstRepeat =
-  error "todo: Course.State#firstRepeat"
+-- firstRepeat :: Ord a => List a -> Optional a
+-- firstRepeat la = 
+
 
 -- | Remove all duplicate elements in a `List`.
 -- /Tip:/ Use `filtering` and `State` with a @Data.Set#Set@.
