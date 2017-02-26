@@ -263,10 +263,14 @@ lift4 func fa fb fc fd = let
 -- prop> Full x *> Full y == Full y
 (*>) :: Applicative f => f a -> f b -> f b
 (*>) fa fb = let
-  -- f (_ -> b)
-  fb' = (\b -> \_ -> b) <$> fb
-  in fb' <*> fa
+  identities = (\_ -> id) <$$> fa
+  in identities <*> fb
 
+
+-- ((\x -> \_ -> x) <$$> fa) <*> fb
+
+-- f (_ -> b)
+-- 
 
 -- | Apply, discarding the value of the second argument.
 -- Pronounced, left apply.
@@ -287,9 +291,9 @@ lift4 func fa fb fc fd = let
 --
 -- prop> Full x <* Full y == Full x
 (<*) :: Applicative f => f b -> f a -> f b
-(<*) = error "todo"
--- (<*) fb fa = fa *> fb
-
+(<*) fb fa = let
+  fb' = (\b -> \_ -> b) <$$> fb
+  in fb' <*> fa
 
 
 -- | Sequences a list of structures to a structure of list.
@@ -309,15 +313,14 @@ lift4 func fa fb fc fd = let
 -- >>> sequence ((*10) :. (+2) :. Nil) 6
 -- [60,8]
 sequence :: Applicative f => List (f a) -> f (List a)
-sequence = error "todo"
--- sequence lfa =
---   foldRight (\fa fla -> ((\la -> \a -> a:.la) <$> fla) <*> fa) (pure Nil) lfa
+sequence lfa =
+  foldRight (\fa fla -> (lift2 (:.) fa fla)) (pure Nil) lfa
 
-  --error "todo sequence"
--- sequence [] = pure []
--- sequence (fx:fxs) = 
 
 --   sequence fxs
+
+-- ((\la -> \a -> a:.la) <$$> fla) <*> fa
+
 
 
 -- | Replicate an effect a given number of times.
@@ -338,11 +341,9 @@ sequence = error "todo"
 -- ["aaa","aab","aac","aba","abb","abc","aca","acb","acc","baa","bab","bac","bba","bbb","bbc","bca","bcb","bcc","caa","cab","cac","cba","cbb","cbc","cca","ccb","ccc"]
 -- taken from FP in Scala
 replicateA :: Applicative f => Int -> f a -> f (List a)
-replicateA = error "todo"
-
--- replicateA i fa = let
---   lfa = (\_ -> fa) <$> count i
---   in sequence lfa
+replicateA i fa = let
+  lfa = (\_ -> fa) <$> count i
+  in sequence lfa
 
 -- | Filter a list with a predicate that produces an effect.
 --
@@ -479,21 +480,21 @@ filtering func (x:.xs) = let
 --   in lift3 toLift fbool fhead ftail
 
   
---   -- Bool -> f (List a)
---   -- would only work with a Monad
---   -- fltr bool =
---   --   if (bool)
---   --   then filteringCombine (pure x) (filtering func xs)
---   --   else filtering func xs
+  -- Bool -> f (List a)
+  -- would only work with a Monad
+  -- fltr bool =
+  --   if (bool)
+  --   then filteringCombine (pure x) (filtering func xs)
+  --   else filtering func xs
   
 
 
--- -- filtering func la = let
--- --   func' a = (\_ -> a) <$> (func a)
--- --   in traverse func' la
--- -- let
--- -- func' a = (a, func a)
--- -- lfabool = func' <$> la
+-- filtering func la = let
+--   func' a = (\_ -> a) <$> (func a)
+--   in traverse func' la
+-- let
+-- func' a = (a, func a)
+-- lfabool = func' <$> la
   
   
 
