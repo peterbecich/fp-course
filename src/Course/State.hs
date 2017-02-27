@@ -12,6 +12,7 @@ import Course.List
 import Course.Functor
 import Course.Applicative
 import Course.Monad
+-- import Data.Set
 import qualified Data.Set as S
 
 import Data.Bifunctor
@@ -217,8 +218,11 @@ findM _ Nil = pure Empty
 --
 -- prop> case firstRepeat xs of Empty -> let xs' = hlist xs in nub xs' == xs'; Full x -> length (filter (== x) xs) > 1
 -- prop> case firstRepeat xs of Empty -> True; Full x -> let (l, (rx :. rs)) = span (/= x) xs in let (l2, r2) = span (/= x) rs in let l3 = hlist (l ++ (rx :. Nil) ++ l2) in nub l3 == l3
+
+-- import qualified Data.Set as S
 -- firstRepeat :: Ord a => List a -> Optional a
--- firstRepeat la = 
+-- firstRepeat la = let
+  
 
 
 -- | Remove all duplicate elements in a `List`.
@@ -227,12 +231,13 @@ findM _ Nil = pure Empty
 -- prop> firstRepeat (distinct xs) == Empty
 --
 -- prop> distinct xs == distinct (flatMap (\x -> x :. x :. Nil) xs)
-distinct ::
-  Ord a =>
-  List a
-  -> List a
-distinct =
-  error "todo: Course.State#distinct"
+-- distinct :: Ord a => List a -> List a
+-- distinct la = 
+
+distinct' :: Ord a => List a -> S.Set a
+distinct' la = foldRight S.insert S.empty la
+
+distinctExample = distinct' (1 :. 1:. 2 :. 1:. 4 :. Nil)
 
 -- | A happy number is a positive integer, where the sum of the square of its digits eventually reaches 1 after repetition.
 -- In contrast, a sad number (not a happy number) is where the sum of the square of its digits never reaches 1
