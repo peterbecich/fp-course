@@ -499,8 +499,37 @@ filtering func (x:.xs) = let
 -- func' a = (a, func a)
 -- lfabool = func' <$> la
   
-  
+-- http://www.davesquared.net/2013/06/filterm.html
 
+data Parser a = P { parse :: List Char -> Optional (List Char, a) }
+
+intParserFunc :: List Char -> Optional (List Char, Int)
+intParserFunc (x:.xs)
+  | x == '0' = Full (xs, 0)
+  | x == '1' = Full (xs, 1)
+  | x == '2' = Full (xs, 2)
+  | x == '3' = Full (xs, 3)
+  | x == '4' = Full (xs, 4)
+  | x == '5' = Full (xs, 5)
+  | x == '6' = Full (xs, 6)
+  | x == '7' = Full (xs, 7)
+  | x == '8' = Full (xs, 8)
+  | x == '9' = Full (xs, 9)
+  | otherwise = Empty
+intParserFunc Nil = Empty
+
+intParser = P intParserFunc
+
+charParserFunc :: List Char -> Optional (List Char, Char)
+charParserFunc (x:.xs)
+  | x >= 'A' && x <= 'z' = Full (xs, x)
+  | otherwise = Empty
+charParserFunc Nil = Empty
+
+oneTwoThreeFour = '1':.'2':.'3':.'4':.Nil
+
+-- only parses the first character
+oneTwoThreeFour' = parse intParser oneTwoThreeFour
 
 -----------------------
 -- SUPPORT LIBRARIES --
