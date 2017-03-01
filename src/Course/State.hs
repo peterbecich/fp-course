@@ -184,7 +184,7 @@ get = State (\s0 -> (s0, s0))
 --
 -- >>> runState (put 1) 0
 -- ((),1)
-put :: s -> State s ()
+put :: s -> State s ()   -- 
 put s0 = State (\_ -> ((), s0))
 
 -- | Find the first element in a `List` that satisfies a given predicate.
@@ -220,10 +220,36 @@ findM _ Nil = pure Empty
 -- prop> case firstRepeat xs of Empty -> True; Full x -> let (l, (rx :. rs)) = span (/= x) xs in let (l2, r2) = span (/= x) rs in let l3 = hlist (l ++ (rx :. Nil) ++ l2) in nub l3 == l3
 
 -- import qualified Data.Set as S
--- firstRepeat :: Ord a => List a -> Optional a
--- firstRepeat la = let
-  
+firstRepeat :: Ord a => List a -> Optional a
+firstRepeat lx = fst $ runState (findM firstRepeatPredicate' lx) S.empty
 
+firstRepeatPredicate :: Ord a => a -> State (S.Set a) Bool
+firstRepeatPredicate x = do
+  set <- get
+  let exsts = S.member x set :: Bool
+  put $ S.insert x set
+  return exsts
+      
+firstRepeatPredicate' :: Ord a => a -> State (S.Set a) Bool
+firstRepeatPredicate' x =
+  get >>= (\set -> put (S.insert x set) >> return (S.member x set))
+
+firstRepeat' :: Ord a => List a -> Optional a
+firstRepeat' lx = firstRepeatHelper lx S.empty
+
+firstRepeatHelper :: Ord a => List a -> (S.Set a) -> Optional a
+firstRepeatHelper (x:.xs) sx
+  | S.member x sx = Full x
+  | otherwise = firstRepeatHelper xs $ S.insert x sx
+firstRepeatHelper Nil _ = Empty
+
+firstRepeat'' lx = firstRepeatHelper' lx S.empty
+
+firstRepeatHelper' :: Ord a => List a -> (S.Set a) -> Optional a
+firstRepeatHelper' lx sx = find (\x -> S.member x sx) lx
+
+repeatsFoo = 1:.2:.1:.4:.Nil
+repeatsInfinitely = repeatsFoo ++ repeatsInfinitely
 
 -- | Remove all duplicate elements in a `List`.
 -- /Tip:/ Use `filtering` and `State` with a @Data.Set#Set@.
@@ -231,13 +257,26 @@ findM _ Nil = pure Empty
 -- prop> firstRepeat (distinct xs) == Empty
 --
 -- prop> distinct xs == distinct (flatMap (\x -> x :. x :. Nil) xs)
--- distinct :: Ord a => List a -> List a
--- distinct la = 
+
+-- emptySet :: Ord a => State (S.Set a) ()
+-- emptySet = put S.empty
+
+distinct :: Ord a => List a -> List a
+distinct la = fst $ runState (filtering ((not <$>) . firstRepeatPredicate) la) S.empty
+
+-- distinctPredicate :: Ord a => a -> State (S.Set a) Bool
+-- distinctPredicate x = do
+--   set <- get
+--   let exsts = S.member x set :: Bool
+--   put $ S.insert x set
+--   return exsts
 
 distinct' :: Ord a => List a -> S.Set a
 distinct' la = foldRight S.insert S.empty la
 
-distinctExample = distinct' (1 :. 1:. 2 :. 1:. 4 :. Nil)
+baz = (1 :. 1:. 2 :. 1:. 4 :. Nil)
+
+distinctExample' = distinct' (1 :. 1:. 2 :. 1:. 4 :. Nil)
 
 -- | A happy number is a positive integer, where the sum of the square of its digits eventually reaches 1 after repetition.
 -- In contrast, a sad number (not a happy number) is where the sum of the square of its digits never reaches 1
