@@ -299,8 +299,16 @@ distinctExample' = distinct' (1 :. 1:. 2 :. 1:. 4 :. Nil)
 --
 -- >>> isHappy 44
 -- True
-isHappy ::
-  Integer
-  -> Bool
+isHappy :: Integer -> Bool
 isHappy =
   error "todo: Course.State#isHappy"
+
+-- monad f is reader
+--  :t (*) :: (->) Int ((->) Int Int)
+-- (*) :: (->) Int ((->) Int Int) :: Int -> Int -> Int
+--  :t join 
+-- join :: Monad f => f (f a) -> f a
+--  :t join (*)
+-- join (*) :: Num a => a -> a
+square :: Integer -> Integer
+square = join (*)
