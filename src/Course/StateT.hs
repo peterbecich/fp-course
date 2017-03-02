@@ -16,6 +16,7 @@ import Course.Monad
 import Course.State
 import qualified Data.Set as S
 import qualified Prelude as P
+import Data.Bifunctor (bimap)
 
 -- $setup
 -- >>> import Test.QuickCheck
@@ -35,12 +36,12 @@ newtype StateT s f a =
 -- >>> runStateT ((+1) <$> (pure 2) :: StateT Int List Int) 0
 -- [(3,0)]
 instance Functor f => Functor (StateT s f) where
-  (<$>) ::
-    (a -> b)
-    -> StateT s f a
-    -> StateT s f b
-  (<$>) =
-    error "todo: Course.StateT (<$>)#instance (StateT s f)"
+  (<$>) :: (a -> b) -> StateT s f a -> StateT s f b
+  (<$>) func stateTSFA = StateT (\s0 -> let
+                                    fas = runStateT stateTSFA s0 -- :: f (a, s)
+                                    in (bimap func id) <$> fas
+                                )
+    
 
 -- | Implement the `Applicative` instance for @StateT s f@ given a @Monad f@.
 --
@@ -60,17 +61,23 @@ instance Functor f => Functor (StateT s f) where
 -- >>> runStateT (StateT (\s -> ((+2), s P.++ [1]) :. ((+3), s P.++ [1]) :. Nil) <*> (StateT (\s -> (2, s P.++ [2]) :. Nil))) [0]
 -- [(4,[0,1,2]),(5,[0,1,2])]
 instance Monad f => Applicative (StateT s f) where
-  pure ::
-    a
-    -> StateT s f a
-  pure =
-    error "todo: Course.StateT pure#instance (StateT s f)"
-  (<*>) ::
-   StateT s f (a -> b)
-    -> StateT s f a
-    -> StateT s f b
-  (<*>) =
-    error "todo: Course.StateT (<*>)#instance (StateT s f)"
+  pure :: a -> StateT s f a
+  pure x = StateT (\s0 -> pure (x, s0))
+
+  (<*>) :: StateT s f (a -> b) -> StateT s f a -> StateT s f b
+  (<*>) stateTSFAB stateTSFA = StateT (\s0 -> let
+                                         fabs = runStateT stateTSFAB s0 -- :: f (a -> b, s)
+                                         in fabs >>= (\tup -> let
+                                                      ab = fst tup -- :: a -> b
+                                                      s1 = snd tup -- :: s
+                                                      fas = runStateT stateTSFA s1 -- :: f (a, s)
+                                                      fbs = (bimap ab id) <$> fas -- :: f (b, s)
+                                                      in fbs
+                                                  ) -- :: f (b, s)
+                                      )
+                                                      
+                                                      
+
 
 -- | Implement the `Monad` instance for @StateT s f@ given a @Monad f@.
 -- Make sure the state value is passed through in `bind`.
@@ -81,14 +88,18 @@ instance Monad f => Applicative (StateT s f) where
 -- >>> let modify f = StateT (\s -> pure ((), f s)) in runStateT (modify (+1) >>= \() -> modify (*2)) 7
 -- ((),16)
 instance Monad f => Monad (StateT s f) where
-  (=<<) ::
-    (a -> StateT s f b)
-    -> StateT s f a
-    -> StateT s f b
-  (=<<) =
-    error "todo: Course.StateT (=<<)#instance (StateT s f)"
-
--- | A `State'` is `StateT` specialised to the `ExactlyOne` functor.
+  (=<<) :: (a -> StateT s f b) -> StateT s f a -> StateT s f b
+  (=<<) aStateTSFB stateTSFA = error "todo"
+  -- (=<<) aStateTSFB stateTSFA = StateT (\s0 -> let
+  --   fas = runStateT stateTSFA s0 -- :: f (a, s)
+  --   fStateTFSB = fas >>= (\tup -> let
+  --               a = fst tup -- :: a
+  --               s1 = snd tup -- :: s
+  --               stateTSFB = aStateTSFB a -- :: StateT s f b
+  --               in pure stateTSFB -- :: f (StateT s f b)
+  --           ) -- :: f (StateT s f b)
+    
+-- | A `State'` is `StateT` specialised to the `Id` functor.
 type State' s a =
   StateT s ExactlyOne a
 

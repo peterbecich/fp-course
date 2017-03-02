@@ -271,12 +271,12 @@ distinct la = fst $ runState (filtering ((not <$>) . firstRepeatPredicate) la) S
 --   put $ S.insert x set
 --   return exsts
 
-distinct' :: Ord a => List a -> S.Set a
-distinct' la = foldRight S.insert S.empty la
+-- distinct' :: Ord a => List a -> S.Set a
+-- distinct' la = foldRight S.insert S.empty la
 
 baz = (1 :. 1:. 2 :. 1:. 4 :. Nil)
 
-distinctExample' = distinct' (1 :. 1:. 2 :. 1:. 4 :. Nil)
+-- distinctExample' = distinct' (1 :. 1:. 2 :. 1:. 4 :. Nil)
 
 -- | A happy number is a positive integer, where the sum of the square of its digits eventually reaches 1 after repetition.
 -- In contrast, a sad number (not a happy number) is where the sum of the square of its digits never reaches 1
