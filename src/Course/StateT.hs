@@ -99,6 +99,7 @@ instance Monad f => Monad (StateT s f) where
   --               in pure stateTSFB -- :: f (StateT s f b)
   --           ) -- :: f (StateT s f b)
     
+    
 -- | A `State'` is `StateT` specialised to the `Id` functor.
 type State' s a =
   StateT s ExactlyOne a
@@ -106,67 +107,52 @@ type State' s a =
 -- | Provide a constructor for `State'` values
 --
 -- >>> runStateT (state' $ runState $ put 1) 0
--- ExactlyOne  ((),1)
-state' ::
-  (s -> (a, s))
-  -> State' s a
-state' =
-  error "todo: Course.StateT#state'"
+-- Id ((),1)
+state' :: (s -> (a, s)) -> State' s a
+state' sas = StateT $ Id . sas
 
 -- | Provide an unwrapper for `State'` values.
 --
 -- >>> runState' (state' $ runState $ put 1) 0
 -- ((),1)
-runState' ::
-  State' s a
-  -> s
-  -> (a, s)
-runState' =
-  error "todo: Course.StateT#runState'"
+runState' :: State' s a -> s -> (a, s)
+runState' stateSA s0 = let
+  idAS = runStateT stateSA s0
+  in runId idAS
 
 -- | Run the `StateT` seeded with `s` and retrieve the resulting state.
-execT ::
-  Functor f =>
-  StateT s f a
-  -> s
-  -> f s
-execT =
-  error "todo: Course.StateT#execT"
+execT :: Functor f => StateT s f a -> s -> f s
+execT stateTSFA s0 = let
+  fas = runStateT stateTSFA s0 -- :: f (a, s)
+  in (\tup -> snd tup) <$> fas
+
 
 -- | Run the `State` seeded with `s` and retrieve the resulting state.
-exec' ::
-  State' s a
-  -> s
-  -> s
-exec' =
-  error "todo: Course.StateT#exec'"
+exec' :: State' s a -> s -> s
+exec' stateSA s0 = let
+  idS = execT stateSA s0 -- :: Id s
+  in runId idS
+  
 
 -- | Run the `StateT` seeded with `s` and retrieve the resulting value.
-evalT ::
-  Functor f =>
-  StateT s f a
-  -> s
-  -> f a
-evalT =
-  error "todo: Course.StateT#evalT"
+evalT :: Functor f => StateT s f a -> s -> f a
+evalT stateTSFA s0 = let
+  fas = runStateT stateTSFA s0 -- :: f (a, s)
+  in (\tup -> fst tup) <$> fas
+
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
-eval' ::
-  State' s a
-  -> s
-  -> a
-eval' =
-  error "todo: Course.StateT#eval'"
+eval' :: State' s a -> s -> a
+eval' stateSA s0 = let
+  idA = evalT stateSA s0 -- :: Id a
+  in runId idA
 
 -- | A `StateT` where the state also distributes into the produced value.
 --
 -- >>> (runStateT (getT :: StateT Int List Int) 3)
 -- [(3,3)]
-getT ::
-  Monad f =>
-  StateT s f s
-getT =
-  error "todo: Course.StateT#getT"
+getT :: Monad f => StateT s f s
+getT = StateT (\s0 -> pure (s0, s0))
 
 -- | A `StateT` where the resulting state is seeded with the given value.
 --
@@ -175,24 +161,26 @@ getT =
 --
 -- >>> runStateT (putT 2 :: StateT Int List ()) 0
 -- [((),2)]
-putT ::
-  Monad f =>
-  s
-  -> StateT s f ()
-putT =
-  error "todo: Course.StateT#putT"
+putT :: Monad f => s -> StateT s f ()
+putT s0 = StateT (\_ -> pure ((), s0))
 
 -- | Remove all duplicate elements in a `List`.
 --
 -- /Tip:/ Use `filtering` and `State'` with a @Data.Set#Set@.
 --
 -- prop> distinct' xs == distinct' (flatMap (\x -> x :. x :. Nil) xs)
-distinct' ::
-  (Ord a, Num a) =>
-  List a
-  -> List a
-distinct' =
-  error "todo: Course.StateT#distinct'"
+distinct' :: (Ord a, Num a) => List a -> List a
+distinct' lx = let
+  distinctFilter = filtering distinctPredicate'
+  stateDistinct = distinctFilter lx
+  in runId $ evalT stateDistinct S.empty
+
+distinctPredicate' :: (Ord a, Num a) => a -> State' (S.Set a) Bool
+distinctPredicate' x = do
+  set <- getT
+  let exsts = S.member x set
+  _ <- putT $ S.insert x set
+  return $ not exsts
 
 -- | Remove all duplicate elements in a `List`.
 -- However, if you see a value greater than `100` in the list,
@@ -205,13 +193,19 @@ distinct' =
 --
 -- >>> distinctF $ listh [1,2,3,2,1,101]
 -- Empty
-distinctF ::
-  (Ord a, Num a) =>
-  List a
-  -> Optional (List a)
+distinctF :: (Ord a, Num a) => List a -> Optional (List a)
 distinctF =
   error "todo: Course.StateT#distinctF"
 
+distinctFPredicate :: (Ord a, Num a) => a -> StateT (S.Set a) Optional Bool
+distinctFPredicate x = error "todo"
+  -- do
+  -- set <- getT
+  -- let exsts = S.member x set
+  --     op = if x > 100 then Empty else Full (not exsts)  
+  -- _ <- putT $ S.insert x set
+  -- return op
+  
 -- | An `OptionalT` is a functor of an `Optional` value.
 data OptionalT f a =
   OptionalT {
