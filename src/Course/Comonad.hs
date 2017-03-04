@@ -17,14 +17,13 @@ import Course.Extend
 -- * The law of right identity
 --   `∀f. copure . (f <<=) == f
 class Extend f => Comonad f where
-  copure ::
-    f a
-    -> a
+  copure :: f a -> a
 
 -- | Implement the @Comonad@ instance for @ExactlyOne@.
 --
 -- >>> copure (ExactlyOne 7)
 -- 7
+
 instance Comonad ExactlyOne where
   copure ::
     ExactlyOne a
@@ -32,8 +31,14 @@ instance Comonad ExactlyOne where
   copure =
     error "todo: Course.Comonad copure#instance ExactlyOne"
 
+instance Comonad Id where
+  copure :: Id a -> a
+  copure (Id x) = x
+
+
 -- | Witness that all things with (<<=) and copure also have (<$>).
 --
+
 -- >>> (+10) <$$> ExactlyOne 7
 -- ExactlyOne 17
 (<$$>) ::
@@ -43,3 +48,13 @@ instance Comonad ExactlyOne where
   -> f b
 (<$$>) =
   error "todo: Course.Comonad#(<$>)"
+
+-- >>> (+10) <$> Id 7
+-- Id 17
+(<$>) :: Comonad f => (a -> b) -> f a -> f b
+(<$>) func fx =  let
+  -- ffunc :: f a -> b
+  ffunc = func . copure
+  in ffunc <<= fx
+
+
