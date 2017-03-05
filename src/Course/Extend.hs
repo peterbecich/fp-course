@@ -53,8 +53,11 @@ instance Extend Id where
 -- [[[4,5,6],[1,2,3]],[[4,5,6]]]
 instance Extend List where
   (<<=) :: (List a -> b) -> List a -> List b
-  (<<=) =
-    error "todo: Course.Extend (<<=)#instance List"
+  (<<=) _ Nil = Nil
+  (<<=) listxb llx@(_:.xs) = let
+    y = listxb llx
+    in (y :. (listxb <<= xs))
+
 
 -- | Implement the @Extend@ instance for @Optional@.
 --
@@ -64,12 +67,9 @@ instance Extend List where
 -- >>> id <<= Empty
 -- Empty
 instance Extend Optional where
-  (<<=) ::
-    (Optional a -> b)
-    -> Optional a
-    -> Optional b
-  (<<=) =
-    error "todo: Course.Extend (<<=)#instance Optional"
+  (<<=) :: (Optional a -> b) -> Optional a -> Optional b
+  (<<=) _ Empty = Empty
+  (<<=) opxb full@(Full _) = Full (opxb full)
 
 -- | Duplicate the functor using extension.
 --
@@ -84,9 +84,6 @@ instance Extend Optional where
 --
 -- >>> cojoin Empty
 -- Empty
-cojoin ::
-  Extend f =>
-  f a
-  -> f (f a)
-cojoin =
-  error "todo: Course.Extend#cojoin"
+cojoin :: Extend f => f a -> f (f a)
+cojoin fx = (\_ -> fx) <<= fx
+
