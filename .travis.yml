@@ -2,6 +2,7 @@
 # MODIFIED - this version does not run the tests since they all fail. It only compiles them.
 language: c
 sudo: false
+language: haskell
 
 cache:
   directories:
@@ -59,8 +60,8 @@ addons:
   apt:
     sources:
       - hvr-ghc
-      packages:
-        - ghc-7.10.2
+    packages:
+      - ghc-7.10.2
 install:
  - cabal --version
  - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
