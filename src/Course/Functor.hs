@@ -25,6 +25,9 @@ class Functor f where
     -> f a
     -> f b
 
+fmap :: (Functor f) => (a -> b) -> f a -> f b
+fmap func fx = func <$> fx
+
 infixl 4 <$>
 
 -- $setup

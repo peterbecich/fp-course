@@ -88,18 +88,34 @@ instance Monad f => Applicative (StateT s f) where
 -- >>> let modify f = StateT (\s -> pure ((), f s)) in runStateT (modify (+1) >>= \() -> modify (*2)) 7
 -- ((),16)
 instance Monad f => Monad (StateT s f) where
-  (=<<) :: (a -> StateT s f b) -> StateT s f a -> StateT s f b
-  (=<<) aStateTSFB stateTSFA = error "todo"
-  -- (=<<) aStateTSFB stateTSFA = StateT (\s0 -> let
-  --   fas = runStateT stateTSFA s0 -- :: f (a, s)
-  --   fStateTFSB = fas >>= (\tup -> let
-  --               a = fst tup -- :: a
-  --               s1 = snd tup -- :: s
-  --               stateTSFB = aStateTSFB a -- :: StateT s f b
-  --               in pure stateTSFB -- :: f (StateT s f b)
-  --           ) -- :: f (StateT s f b)
-    
-    
+  --(=<<) :: (a -> StateT s f b) -> StateT s f a -> StateT s f b
+  (=<<) aStateTSFB stateTSFA = let
+    sfa = runStateT stateTSFA -- :: s -> f (a, s)
+    transition s0 = let
+      fa = sfa s0 -- :: f (a, s)
+      fStateTSFB = fmap (\tup -> (aStateTSFB (fst tup), snd tup)) fa -- :: f (StateT s f b, s)
+      ffsbs = fmap (\tup -> (runStateT (fst tup) (snd tup), snd tup)) fStateTSFB -- :: f ( f (b, s), s )
+      ffsb = fmap (\tup -> fst tup) ffsbs
+      fsb = join ffsb -- :: f ( b, s )
+      in fsb
+    in StateT transition
+
+  -- (=<<) aStateTSFB stateTSFA = let
+  --   -- func' :: s -> f ( b, s )
+  --   func' s0 = let 
+  --        fas = runStateT stateTSFA s0 -- :: f (a, s)
+  --        -- func :: a -> f (b, s)
+  --        func x = let
+  --          stateTSFB = aStateTSFB x -- :: StateT s f b
+  --          fStateTSFB = pure stateTSFB -- :: f (StateT s f b)
+  --          ffsb = runStateT <$> fStateTSFB -- :: f ( f ( b, s ) )
+  --          in (join ffsb)
+         
+  --        fbs = fas >>= func
+  --        in fbs -- :: f ( b, s )
+  --   in StateT func'
+
+                               
 -- | A `State'` is `StateT` specialised to the `Id` functor.
 type State' s a =
   StateT s ExactlyOne a
