@@ -19,6 +19,8 @@ instance (Functor f, Functor g) =>
   -- (<$>) :: (a -> b) -> Compose f g a -> Compose f g b
   (<$>) func ( Compose fga ) = Compose $ (\ga -> (func <$> ga)) <$> fga
 
+-- First Principles
+-- cleaner: Compose $ (fmap . fmap) func fga
 
 instance (Applicative f, Applicative g) =>
   Applicative (Compose f g) where
