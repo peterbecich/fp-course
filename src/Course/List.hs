@@ -75,6 +75,10 @@ headOr :: a -> List a -> a
 headOr _ (x:._) = x
 headOr y _ = y
 
+tailOr :: List a -> List a -> List a
+tailOr _ (x :. xs) = xs
+tailOr fallback Nil = fallback
+
 
 -- | The product of the elements of a list.
 --
@@ -154,6 +158,9 @@ filter :: (a -> Bool) -> List a -> List a
 filter predicate la =
   foldRight (\a lb -> if (predicate a) then a:.lb else lb) Nil la
 
+exists :: (a -> Bool) -> List a -> Bool
+exists predicate la =
+  foldRight (\a b -> if (predicate a) then True else b) False la
 
 -- | Append two lists to a new list.
 --
