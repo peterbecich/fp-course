@@ -176,8 +176,9 @@ character = P (characterHelper)
 -- less use of let...
 mapParser :: (a -> b) -> Parser a -> Parser b
 mapParser = error "todo"
-
--- mapParser func pa = (fmap . fmap) func pa
+-- mapParser func pa = P (\input ->
+--                          (fmap . fmap) func input
+--                       )
   
 
 
@@ -619,8 +620,8 @@ instance Functor Parser where
     (a -> b)
     -> Parser a
     -> Parser b
-  (<$>) =
-     error "todo: Course.Parser (<$>)#instance Parser"
+  (<$>) = mapParser
+
 
 -- | Write an Applicative functor instance for a @Parser@.
 -- /Tip:/ Use @bindParser@ and @valueParser@.

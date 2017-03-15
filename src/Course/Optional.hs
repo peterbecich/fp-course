@@ -92,6 +92,10 @@ contains :: Eq a => a -> Optional a -> Bool
 contains _ Empty = False
 contains a (Full z) = a == z
 
+opExists :: Optional a -> Bool
+opExists (Full _) = True
+opExists Empty = False
+
 foldOptional :: (a -> c) -> c -> Optional a -> c
 foldOptional ac _ (Full a) = ac a
 foldOptional _ c Empty = c

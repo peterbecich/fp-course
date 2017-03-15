@@ -75,9 +75,6 @@ instance Monad f => Applicative (StateT s f) where
                                                       in fbs
                                                   ) -- :: f (b, s)
                                       )
-                                                      
-                                                      
-
 
 -- | Implement the `Monad` instance for @StateT s f@ given a @Monad f@.
 -- Make sure the state value is passed through in `bind`.
@@ -87,34 +84,28 @@ instance Monad f => Applicative (StateT s f) where
 --
 -- >>> let modify f = StateT (\s -> pure ((), f s)) in runStateT (modify (+1) >>= \() -> modify (*2)) 7
 -- ((),16)
+
+-- runStateT :: StateT s f a -> s -> f (a, s)
 instance Monad f => Monad (StateT s f) where
-  --(=<<) :: (a -> StateT s f b) -> StateT s f a -> StateT s f b
-  (=<<) aStateTSFB stateTSFA = let
-    sfa = runStateT stateTSFA -- :: s -> f (a, s)
-    transition s0 = let
-      fa = sfa s0 -- :: f (a, s)
-      fStateTSFB = fmap (\tup -> (aStateTSFB (fst tup), snd tup)) fa -- :: f (StateT s f b, s)
-      ffsbs = fmap (\tup -> (runStateT (fst tup) (snd tup), snd tup)) fStateTSFB -- :: f ( f (b, s), s )
-      ffsb = fmap (\tup -> fst tup) ffsbs
-      fsb = join ffsb -- :: f ( b, s )
-      in fsb
-    in StateT transition
-
+  (=<<) :: (a -> StateT s f b) -> StateT s f a -> StateT s f b
+  -- f =<< StateT k = StateT ((=<<) (\(a, t) -> runStateT (f a) t) . k)
+  aSFB =<< StateT sfa = StateT ((=<<) (\(a, s0) -> let
+                                          stateTSFB = aSFB a -- :: StateT s f b
+                                          sfb = runStateT stateTSFB -- :: s -> f ( b, s )
+                                          fb = sfb s0 -- :: f ( b, s )
+                                          in fb
+                                      ) . sfa
+                               )
   -- (=<<) aStateTSFB stateTSFA = let
-  --   -- func' :: s -> f ( b, s )
-  --   func' s0 = let 
-  --        fas = runStateT stateTSFA s0 -- :: f (a, s)
-  --        -- func :: a -> f (b, s)
-  --        func x = let
-  --          stateTSFB = aStateTSFB x -- :: StateT s f b
-  --          fStateTSFB = pure stateTSFB -- :: f (StateT s f b)
-  --          ffsb = runStateT <$> fStateTSFB -- :: f ( f ( b, s ) )
-  --          in (join ffsb)
-         
-  --        fbs = fas >>= func
-  --        in fbs -- :: f ( b, s )
-  --   in StateT func'
-
+  --   sfa = runStateT stateTSFA -- :: s -> f (a, s)
+  --   transition s0 = let
+  --     fa = sfa s0 -- :: f (a, s)
+  --     fStateTSFB = fmap (\tup -> (aStateTSFB (fst tup), snd tup)) fa -- :: f (StateT s f b, s)
+  --     ffsbs = fmap (\tup -> (runStateT (fst tup) (snd tup), snd tup)) fStateTSFB -- :: f ( f (b, s), s )
+  --     ffsb = fmap (\tup -> fst tup) ffsbs
+  --     fsb = join ffsb -- :: f ( b, s )
+  --     in fsb
+  --   in StateT transition
                                
 -- | A `State'` is `StateT` specialised to the `Id` functor.
 type State' s a =
@@ -210,17 +201,17 @@ distinctPredicate' x = do
 -- >>> distinctF $ listh [1,2,3,2,1,101]
 -- Empty
 distinctF :: (Ord a, Num a) => List a -> Optional (List a)
-distinctF =
-  error "todo: Course.StateT#distinctF"
+distinctF lx = fmap fst $ runStateT (filtering distinctFPredicate lx) S.empty
+
 
 distinctFPredicate :: (Ord a, Num a) => a -> StateT (S.Set a) Optional Bool
-distinctFPredicate x = error "todo"
-  -- do
-  -- set <- getT
-  -- let exsts = S.member x set
-  --     op = if x > 100 then Empty else Full (not exsts)  
-  -- _ <- putT $ S.insert x set
-  -- return op
+distinctFPredicate x = do
+  set <- getT
+  let exsts = S.member x set
+      op = if x > 100 then Empty else Full (not exsts) -- :: Optional Bool
+  _ <- putT $ S.insert x set
+  set' <- getT
+  if (opExists op) then StateT (\_ -> Full (not exsts, set')) else StateT (\_ -> Empty)
   
 -- | An `OptionalT` is a functor of an `Optional` value.
 data OptionalT f a =
