@@ -233,26 +233,19 @@ instance Functor f => Functor (OptionalT f) where
 -- [Full 2,Empty,Full 3,Empty]
 instance Applicative f => Applicative (OptionalT f) where
   pure x = OptionalT $ pure $ Full x
-  -- (<*>) OptionalT f (Optional a -> Optional b) -> OptionalT f Optional a -> OptionalT f Optional b
-  (<*>) = error "todo"
-  -- (<*>) optionalTFOpAOpB optionalTFOpA = let
-  --   fOpAOpB = runOptionalT optionalTFOpAOpB -- :: f (Optional a -> Optional b)
-  --   fOpA = runOptionalT optionalTFOpA -- :: f (Optional a)
-  --   fOpB = fOpAOpB <*> fOpA
-  --   in OptionalT fOpB
-  --((runOptionalT optionalTFAB) <*> (runOptionalT optionalTFA))
-
+  -- (<*>) OptionalT f (Optional (a -> b)) -> OptionalT f Optional a -> OptionalT f Optional b
+  (<*>) (OptionalT fOpAB) (OptionalT fOpA) = OptionalT $ lift2 (\opAB opA -> opAB <*> opA) fOpAB fOpA
 
 -- | Implement the `Monad` instance for `OptionalT f` given a Monad f.
 --
 -- >>> runOptionalT $ (\a -> OptionalT (Full (a+1) :. Full (a+2) :. Nil)) =<< OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Full 3,Empty]
 instance Monad f => Monad (OptionalT f) where
-  (=<<) aOptionalTfOpB optionalTFOpA = error "todo" -- let
-    -- fOpA = runOptionalT optionalTFOpA -- :: f (Optional a)
-    -- in fOpA >>= (\opA -> opA >>= (\a -> let
-    --                 opOptionalTfOpB = aOptionalTfOpB a -- :: Optional (OptionalT (f (Optional b)))
-                    
+  (=<<) aOpTfb (OptionalT fOpA) = let
+    -- Optional a -> f (Optional a)
+    helper (Full a) = runOptionalT $ aOpTfb a
+    helper Empty = pure Empty
+    in OptionalT $ fOpA >>= helper
 
 -- | A `Logger` is a pair of a list of log values (`[l]`) and an arbitrary value (`a`).
 data Logger l a =
