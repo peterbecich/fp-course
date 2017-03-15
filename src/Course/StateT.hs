@@ -203,7 +203,6 @@ distinctPredicate' x = do
 distinctF :: (Ord a, Num a) => List a -> Optional (List a)
 distinctF lx = fmap fst $ runStateT (filtering distinctFPredicate lx) S.empty
 
-
 distinctFPredicate :: (Ord a, Num a) => a -> StateT (S.Set a) Optional Bool
 distinctFPredicate x = do
   set <- getT
@@ -306,9 +305,17 @@ log1 lg x = Logger (lg :. Nil) x
 --
 -- >>> distinctG $ listh [1,2,3,2,6,106]
 -- Logger ["even number: 2","even number: 2","even number: 6","aborting > 100: 106"] Empty
-distinctG ::
-  (Integral a, Show a) =>
-  List a
-  -> Logger Chars (Optional (List a))
-distinctG =
-  error "todo: Course.StateT#distinctG"
+distinctG :: (Integral a, Show a) => List a -> Logger Chars (Optional (List a))
+distinctG lx = error "todo"
+  --fmap fst $ runStateT (filtering distinctGPredicate lx) S.empty
+
+
+
+distinctGPredicate :: (Integral a, Show a) => a -> StateT (S.Set a) (OptionalT (Logger Chars)) Bool
+distinctGPredicate x = error "todo"
+  -- do
+  -- set <- getT -- :: S.Set a
+  -- let exsts = S.member x set
+  --     op = if x > 100 then pure (log1 ("aborting > 100") Empty) else pure (log1 "foo" (Full (not exsts)))
+  -- _ <- putT $ S.insert x set
+  -- StateT ( \_ -> op )
