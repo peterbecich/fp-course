@@ -200,7 +200,7 @@ distinctPredicate' x = do
 --
 -- >>> distinctF $ listh [1,2,3,2,1,101]
 -- Empty
-distinctF :: (Ord a, Num a) => List a -> Optional (List a)
+-- distinctF :: (Ord a, Num a) => List a -> Optional (List a)
 distinctF lx = fmap fst $ runStateT (filtering distinctFPredicate lx) S.empty
 
 distinctFPredicate :: (Ord a, Num a) => a -> StateT (S.Set a) Optional Bool
@@ -211,6 +211,28 @@ distinctFPredicate x = do
   _ <- putT $ S.insert x set
   set' <- getT
   if (opExists op) then StateT (\_ -> Full (not exsts, set')) else StateT (\_ -> Empty)
+
+
+
+-- from Chris
+
+-- | Remove all duplicate elements in a `List`.
+-- However, if you see a value greater than `100` in the list,
+-- abort the computation by producing `Empty`.
+--
+-- /Tip:/ Use `filtering` and `StateT` over `Optional` with a @Data.Set#Set@.
+--
+-- >>> distinctF' $ listh [1,2,3,2,1]
+-- Full [1,2,3]
+--
+-- >>> distinctF' $ listh [1,2,3,2,1,101]
+-- Empty
+distinctF' ls = evalT (filtering distinctFPredicate' ls) S.empty
+
+distinctFPredicate' :: (Ord a, Num a) => a -> StateT (S.Set a) Optional Bool
+distinctFPredicate' a
+  | a > 100 = StateT $ const Empty
+  | otherwise = StateT $ \s -> Full $ (S.notMember a s, S.insert a s)
   
 -- | An `OptionalT` is a functor of an `Optional` value.
 data OptionalT f a =
@@ -290,6 +312,9 @@ instance Monad (Logger l) where
 log1 :: l -> a -> Logger l a
 log1 lg x = Logger (lg :. Nil) x
 
+noLog :: a -> Logger l a
+noLog x = Logger Nil x
+
 
 -- | Remove all duplicate integers from a list. Produce a log as you go.
 -- If there is an element above 100, then abort the entire computation and produce no result.
@@ -306,13 +331,17 @@ log1 lg x = Logger (lg :. Nil) x
 -- >>> distinctG $ listh [1,2,3,2,6,106]
 -- Logger ["even number: 2","even number: 2","even number: 6","aborting > 100: 106"] Empty
 distinctG :: (Integral a, Show a) => List a -> Logger Chars (Optional (List a))
-distinctG lx = error "todo"
-  --fmap fst $ runStateT (filtering distinctGPredicate lx) S.empty
+distinctG lx = (fmap . fmap) fst $ runOptionalT $ runStateT (filtering distinctGPredicate lx) S.empty
 
 
 
 distinctGPredicate :: (Integral a, Show a) => a -> StateT (S.Set a) (OptionalT (Logger Chars)) Bool
-distinctGPredicate x = error "todo"
+distinctGPredicate x
+  | x > 100 = StateT (\s0 -> OptionalT $ log1 ("aborting > 100: " ++ ((listh . show) x)) Empty)
+  | mod x 2 == 0 = StateT (\s0 -> OptionalT (log1 ("even number: " ++ ((listh . show) x)) (Full (S.notMember x s0, S.insert x s0))))
+  | otherwise = StateT (\s0 -> OptionalT ( noLog (Full ( S.notMember x s0, S.insert x s0))))
+
+
   -- do
   -- set <- getT -- :: S.Set a
   -- let exsts = S.member x set
