@@ -141,6 +141,8 @@ instance Applicative ((->) t) where
     a = functa t
     in funcab a
 
+liftA :: Applicative f => (a -> b) -> f a -> f b
+liftA func fx = (pure func) <*> fx
 
 -- | Apply a binary function in the environment.
 --

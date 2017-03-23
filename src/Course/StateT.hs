@@ -65,16 +65,23 @@ instance Monad f => Applicative (StateT s f) where
   pure x = StateT (\s0 -> pure (x, s0))
 
   (<*>) :: StateT s f (a -> b) -> StateT s f a -> StateT s f b
-  (<*>) stateTSFAB stateTSFA = StateT (\s0 -> let
-                                         fabs = runStateT stateTSFAB s0 -- :: f (a -> b, s)
-                                         in fabs >>= (\tup -> let
-                                                      ab = fst tup -- :: a -> b
-                                                      s1 = snd tup -- :: s
-                                                      fas = runStateT stateTSFA s1 -- :: f (a, s)
-                                                      fbs = (bimap ab id) <$> fas -- :: f (b, s)
-                                                      in fbs
-                                                  ) -- :: f (b, s)
-                                      )
+  (<*>) stateTSFAB stateTSFA = let 
+      sfabs = runStateT stateTSFAB -- :: s -> f (a -> b, s)
+      sfabs' (x, s1) = fmap (bimap (\f -> f x) id) (sfabs s1)   -- :: (a, s) -> f (b, s)
+      sfas = runStateT stateTSFA -- :: s -> f (a, s)
+      sfbs s0 = (sfas s0) >>= sfabs' -- :: s -> f (b, s)
+      in StateT sfbs
+
+    -- StateT (\s0 -> let
+                               --           fabs = runStateT stateTSFAB s0 -- :: f (a -> b, s)
+                               --           in fabs >>= (\tup -> let
+                               --                        ab = fst tup -- :: a -> b
+                               --                        s1 = snd tup -- :: s
+                               --                        fas = runStateT stateTSFA s1 -- :: f (a, s)
+                               --                        fbs = (bimap ab id) <$> fas -- :: f (b, s)
+                               --                        in fbs
+                               --                    ) -- :: f (b, s)
+                               --        )
 
 -- | Implement the `Monad` instance for @StateT s f@ given a @Monad f@.
 -- Make sure the state value is passed through in `bind`.
