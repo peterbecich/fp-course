@@ -86,5 +86,6 @@ instance Extend Optional where
 -- >>> cojoin Empty
 -- Empty
 cojoin :: Extend f => f a -> f (f a)
-cojoin fx = (\_ -> fx) <<= fx
-
+cojoin fx = id <<= fx
+-- cojoin fx = (\_ -> fx) <<= fx
+-- (<<=) :: Extend f => (f a -> b) -> f a -> f b
