@@ -65,12 +65,17 @@ instance Monad f => Applicative (StateT s f) where
   pure x = StateT (\s0 -> pure (x, s0))
 
   (<*>) :: StateT s f (a -> b) -> StateT s f a -> StateT s f b
-  (<*>) stateTSFAB stateTSFA = let 
-      sfabs = runStateT stateTSFAB -- :: s -> f (a -> b, s)
-      sfabs' (x, s1) = fmap (bimap (\f -> f x) id) (sfabs s1)   -- :: (a, s) -> f (b, s)
-      sfas = runStateT stateTSFA -- :: s -> f (a, s)
-      sfbs s0 = (sfas s0) >>= sfabs' -- :: s -> f (b, s)
-      in StateT sfbs
+  (<*>) stateTSFAB stateTSFA = StateT $ \s0 -> do
+    (ab, s1) <- (runStateT stateTSFAB) s0
+    (a, s2) <- (runStateT stateTSFA) s1
+    return (ab a, s2)
+
+    -- let 
+      -- sfabs = runStateT stateTSFAB -- :: s -> f (a -> b, s)
+      -- sfabs' (x, s1) = fmap (bimap (\f -> f x) id) (sfabs s1)   -- :: (a, s) -> f (b, s)
+      -- sfas = runStateT stateTSFA -- :: s -> f (a, s)
+      -- sfbs s0 = (sfas s0) >>= sfabs' -- :: s -> f (b, s)
+      -- in StateT sfbs
 
     -- StateT (\s0 -> let
                                --           fabs = runStateT stateTSFAB s0 -- :: f (a -> b, s)
@@ -96,13 +101,18 @@ instance Monad f => Applicative (StateT s f) where
 instance Monad f => Monad (StateT s f) where
   (=<<) :: (a -> StateT s f b) -> StateT s f a -> StateT s f b
   -- f =<< StateT k = StateT ((=<<) (\(a, t) -> runStateT (f a) t) . k)
-  aSFB =<< StateT sfa = StateT ((=<<) (\(a, s0) -> let
-                                          stateTSFB = aSFB a -- :: StateT s f b
-                                          sfb = runStateT stateTSFB -- :: s -> f ( b, s )
-                                          fb = sfb s0 -- :: f ( b, s )
-                                          in fb
-                                      ) . sfa
-                               )
+  aStateTSFB =<< stateTSFA = StateT $ \s0 -> do
+    (a, s1) <- (runStateT stateTSFA) s0
+    runStateT (aStateTSFB a) s1
+
+
+    -- StateT ((=<<) (\(a, s0) -> let
+                        --                   stateTSFB = aSFB a -- :: StateT s f b
+                        --                   sfb = runStateT stateTSFB -- :: s -> f ( b, s )
+                        --                   fb = sfb s0 -- :: f ( b, s )
+                        --                   in fb
+                        --               ) . sfa
+                        --        )
   -- (=<<) aStateTSFB stateTSFA = let
   --   sfa = runStateT stateTSFA -- :: s -> f (a, s)
   --   transition s0 = let
@@ -207,6 +217,7 @@ distinctPredicate' x = do
 --
 -- >>> distinctF $ listh [1,2,3,2,1,101]
 -- Empty
+
 -- distinctF :: (Ord a, Num a) => List a -> Optional (List a)
 distinctF lx = fmap fst $ runStateT (filtering distinctFPredicate lx) S.empty
 
