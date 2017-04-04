@@ -278,6 +278,10 @@ baz = (1 :. 1:. 2 :. 1:. 4 :. Nil)
 
 -- distinctExample' = distinct' (1 :. 1:. 2 :. 1:. 4 :. Nil)
 
+-- https://en.wikipedia.org/wiki/Happy_number
+
+-- A happy number is a number defined by the following process: Starting with any positive integer, replace the number by the sum of the squares of its digits, and repeat the process until the number either equals 1 (where it will stay), or it loops endlessly in a cycle that does not include 1. Those numbers for which this process ends in 1 are happy numbers, while those that do not end in 1 are unhappy numbers (or sad numbers).[1]
+
 -- | A happy number is a positive integer, where the sum of the square of its digits eventually reaches 1 after repetition.
 -- In contrast, a sad number (not a happy number) is where the sum of the square of its digits never reaches 1
 -- because it results in a recurring sequence.
@@ -300,8 +304,21 @@ baz = (1 :. 1:. 2 :. 1:. 4 :. Nil)
 -- >>> isHappy 44
 -- True
 isHappy :: Integer -> Bool
-isHappy =
-  error "todo: Course.State#isHappy"
+isHappy x = let
+  fstRepeat :: Optional Integer
+  fstRepeat = firstRepeat (repetitions x)
+  in case fstRepeat of
+       Empty -> False
+       (Full i)
+         | i /= 1 -> False
+         | otherwise -> True
+
+-- | Split an integer into its digits
+-- >>> digits 123
+-- [1,2,3]
+
+digits :: Integer -> List Integer
+digits i = (toInteger . digitToInt) <$> (listh (show i))
 
 -- monad f is reader
 --  :t (*) :: (->) Int ((->) Int Int)
@@ -310,5 +327,31 @@ isHappy =
 -- join :: Monad f => f (f a) -> f a
 --  :t join (*)
 -- join (*) :: Num a => a -> a
+
+-- | Square
+-- >>> square 4
+-- 16
 square :: Integer -> Integer
 square = join (*)
+
+-- | Sum the squares of the digits
+-- >>> sumSquareDigits (digits 19)
+-- 82
+sumSquareDigits :: List Integer -> Integer
+sumSquareDigits li = let
+  squared = square <$> li
+  in foldRight (+) 0 squared
+
+-- | Sum the squares of the digits again
+-- >>> sumSquare 19
+-- 82
+sumSquare :: Integer -> Integer
+sumSquare i = sumSquareDigits (digits i)
+
+-- infinite list
+repetitions :: Integer -> List Integer
+repetitions x = let
+  x' = sumSquare x
+  in x' :. (repetitions x')
+
+repetitions' x = take 20 (repetitions x)

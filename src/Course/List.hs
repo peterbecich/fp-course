@@ -42,6 +42,9 @@ infixr 5 :.
 instance Show t => Show (List t) where
   show = show . foldRight (:) []
 
+single :: a -> List a
+single x = x :. Nil
+
 -- The list of integers from zero to infinity.
 infinity ::
   List Integer
