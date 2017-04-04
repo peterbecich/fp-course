@@ -57,6 +57,7 @@ instance Extend List where
   (<<=) listxb llx@(_:.xs) = let
     y = listxb llx
     in (y :. (listxb <<= xs))
+  -- (<<=) f la = (f la) :. Nil
 
 
 -- | Implement the @Extend@ instance for @Optional@.
