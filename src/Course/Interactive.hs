@@ -80,10 +80,13 @@ data Op =
 -- /Tip:/ @putStr :: String -> IO ()@ -- Prints a string to standard output.
 --
 -- /Tip:/ @putStrLn :: String -> IO ()@ -- Prints a string and then a new line to standard output.
-convertInteractive ::
-  IO ()
-convertInteractive =
-  error "todo: Course.Interactive#convertInteractive"
+convertInteractive :: IO ()
+convertInteractive = do
+  _ <- putStrLn "Please enter a line to convert to upper-case: "
+  str <- getLine
+  let str' = toUpper <$> str
+  putStrLn str'
+  
 
 -- |
 --
@@ -108,10 +111,16 @@ convertInteractive =
 -- /Tip:/ @putStr :: String -> IO ()@ -- Prints a string to standard output.
 --
 -- /Tip:/ @putStrLn :: String -> IO ()@ -- Prints a string and then a new line to standard output.
-reverseInteractive ::
-  IO ()
-reverseInteractive =
-  error "todo: Course.Interactive#reverseInteractive"
+reverseInteractive :: IO ()
+reverseInteractive = do
+  _ <- putStrLn "Please enter a file name: "
+  fileName <- getLine
+  _ <- putStrLn "Please enter a destination file name: "
+  destinationFileName <- getLine
+  contents <- readFile fileName
+  let contents' = reverse contents
+  writeFile destinationFileName contents'
+
 
 -- |
 --
@@ -134,11 +143,23 @@ reverseInteractive =
 -- /Tip:/ @putStr :: String -> IO ()@ -- Prints a string to standard output.
 --
 -- /Tip:/ @putStrLn :: String -> IO ()@ -- Prints a string and then a new line to standard output.
-encodeInteractive ::
-  IO ()
-encodeInteractive =
-  error "todo: Course.Interactive#encodeInteractive"
+encodeInteractive :: IO ()
+encodeInteractive = do
+  _ <- putStrLn "Please enter an address to encode as a URL: "
+  str <- getLine
+  let
+    encoder :: Char -> Chars
+    encoder ' ' = "%20"
+    encoder '\t' = "%09"
+    encoder '"' = "$22"
+    encoder c = single c
+    str' :: Chars
+    str' = join $ encoder <$> str
+  putStrLn str'
 
+-- use
+-- http://www.google.com/unencoded	  web address
+  
 interactive ::
   IO ()
 interactive =
