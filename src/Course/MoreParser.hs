@@ -36,10 +36,10 @@ P p <.> i =
 --
 -- >>> parse spaces "abc"
 -- Result >abc< ""
-spaces ::
-  Parser Chars
-spaces =
-  error "todo: Course.MoreParser#spaces"
+
+-- does not combine multiple spaces into a single token
+spaces :: Parser Chars
+spaces = list space
 
 -- | Write a function that applies the given parser, then parses 0 or more spaces,
 -- then produces the result of the original parser.
@@ -51,11 +51,11 @@ spaces =
 --
 -- >>> parse (tok (is 'a')) "abc"
 -- Result >bc< 'a'
-tok ::
-  Parser a
-  -> Parser a
-tok =
-  error "todo: Course.MoreParser#tok"
+tok :: Parser a -> Parser a
+tok pa = do
+  a <- pa
+  _ <- spaces
+  return a
 
 -- | Write a function that parses the given char followed by 0 or more spaces.
 --
@@ -66,11 +66,8 @@ tok =
 -- True
 -- 
 -- /Tip:/ Use `tok` and `is`.
-charTok ::
-  Char
-  -> Parser Char
-charTok =
-  error "todo: Course.MoreParser#charTok"
+charTok :: Char -> Parser Char
+charTok c = tok $ is c
 
 -- | Write a parser that parses a comma ',' followed by 0 or more spaces.
 --
@@ -81,10 +78,8 @@ charTok =
 -- True
 -- 
 -- /Tip:/ Use `charTok`.
-commaTok ::
-  Parser Char
-commaTok =
-  error "todo: Course.MoreParser#commaTok"
+commaTok :: Parser Char
+commaTok = charTok ','
 
 -- | Write a parser that parses either a double-quote or a single-quote.
 --
@@ -98,10 +93,9 @@ commaTok =
 --
 -- >>> isErrorResult (parse quote "abc")
 -- True
-quote ::
-  Parser Char
-quote =
-  error "todo: Course.MoreParser#quote"
+quote :: Parser Char
+quote = is '\'' ||| is '"'
+
 
 -- | Write a function that parses the given string (fails otherwise).
 --
@@ -112,11 +106,9 @@ quote =
 --
 -- >>> isErrorResult (parse (string "abc") "bcdef")
 -- True
-string ::
-  Chars
-  -> Parser Chars
-string =
-  error "todo: Course.MoreParser#is"
+string :: Chars -> Parser Chars
+string str = traverse is str
+
 
 -- | Write a function that parsers the given string, followed by 0 or more spaces.
 --
@@ -127,11 +119,10 @@ string =
 --
 -- >>> isErrorResult (parse (stringTok "abc") "bc  ")
 -- True
-stringTok ::
-  Chars
-  -> Parser Chars
-stringTok =
-  error "todo: Course.MoreParser#stringTok"
+stringTok :: Chars -> Parser Chars
+stringTok str = tok (string str)
+
+  
 
 -- | Write a function that tries the given parser, otherwise succeeds by producing the given value.
 --
@@ -142,12 +133,9 @@ stringTok =
 --
 -- >>> parse (option 'x' character) ""
 -- Result >< 'x'
-option ::
-  a
-  -> Parser a
-  -> Parser a
-option =
-  error "todo: Course.MoreParser#option"
+option :: a -> Parser a -> Parser a
+option fallback pa = pa ||| valueParser fallback
+
 
 -- | Write a parser that parses 1 or more digits.
 --
@@ -158,10 +146,9 @@ option =
 --
 -- >>> isErrorResult (parse digits1 "abc123")
 -- True
-digits1 ::
-  Parser Chars
-digits1 =
-  error "todo: Course.MoreParser#digits1"
+digits1 :: Parser Chars
+digits1 = list1 digit
+
 
 -- | Write a function that parses one of the characters in the given string.
 --
@@ -172,11 +159,12 @@ digits1 =
 --
 -- >>> isErrorResult (parse (oneof "abc") "def")
 -- True
-oneof ::
-  Chars
-  -> Parser Char
-oneof =
-  error "todo: Course.MoreParser#oneof"
+oneof :: Chars -> Parser Char
+oneof chrs = let
+  parsers :: List (Parser Char)
+  parsers = is <$> chrs
+  in foldRight (|||) failed parsers
+
 
 -- | Write a function that parses any character, but fails if it is in the given string.
 --
@@ -187,10 +175,8 @@ oneof =
 --
 -- >>> isErrorResult (parse (noneof "abcd") "abc")
 -- True
-noneof ::
-  Chars
-  -> Parser Char
-noneof =
+noneof :: Chars -> Parser Char
+noneof excludeChrs =
   error "todo: Course.MoreParser#noneof"
 
 -- | Write a function that applies the first parser, runs the third parser keeping the result,
@@ -209,13 +195,12 @@ noneof =
 --
 -- >>> isErrorResult (parse (between (is '[') (is ']') character) "abc]")
 -- True
-between ::
-  Parser o
-  -> Parser c
-  -> Parser a
-  -> Parser a
-between =
-  error "todo: Course.MoreParser#between"
+between :: Parser o -> Parser c -> Parser a -> Parser a
+between po pc pa = do
+  _ <- po
+  a <- pa
+  _ <- pc 
+  return a
 
 -- | Write a function that applies the given parser in between the two given characters.
 --
@@ -232,13 +217,8 @@ between =
 --
 -- >>> isErrorResult (parse (betweenCharTok '[' ']' character) "abc]")
 -- True
-betweenCharTok ::
-  Char
-  -> Char
-  -> Parser a
-  -> Parser a
-betweenCharTok =
-  error "todo: Course.MoreParser#betweenCharTok"
+betweenCharTok :: Char -> Char -> Parser a -> Parser a
+betweenCharTok c1 c2 pa = between (charTok c1) (charTok c2) pa
 
 -- | Write a function that parses 4 hex digits and return the character value.
 --
@@ -255,10 +235,10 @@ betweenCharTok =
 --
 -- >>> isErrorResult (parse hex "0axf")
 -- True
-hex ::
-  Parser Char
-hex =
-  error "todo: Course.MoreParser#hex"
+hex :: Parser Char
+hex = undefined
+  --(upToThisMany 4 (hexChar ||| digit))
+
 
 -- | Write a function that parses the character 'u' followed by 4 hex digits and return the character value.
 --

@@ -79,7 +79,7 @@ headOr _ (x:._) = x
 headOr y _ = y
 
 tailOr :: List a -> List a -> List a
-tailOr _ (x :. xs) = xs
+tailOr _ (_ :. xs) = xs
 tailOr fallback Nil = fallback
 
 

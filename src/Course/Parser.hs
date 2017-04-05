@@ -257,6 +257,15 @@ bindParser func pa = P $ \input -> let
   
 infixl 3 |||
 
+fromOptional :: (Chars -> Optional a) -> Parser a
+fromOptional f = P $ \input -> case input of
+  Nil -> ErrorResult UnexpectedEof
+  (c:.cs) -> let
+    op = f (single c)
+    in case op of
+         (Full x) -> Result cs x
+         Empty -> ErrorResult $ UnexpectedChar c
+
 -- | Return a parser that continues producing a list of values from the given parser.
 --
 -- /Tip:/ Use @list1@, @valueParser@ and @(|||)@.
@@ -323,7 +332,7 @@ satisfy predicate = P $ \input -> case input of
   (x:.xs)
     | predicate x -> Result xs x
     | otherwise -> ErrorResult Failed
-
+  Nil -> ErrorResult UnexpectedEof
 
 -- | Return a parser that produces the given character but fails if
 --
@@ -338,6 +347,7 @@ is c = P $ \input -> case input of
   (x:.xs)
     | x == c -> Result xs x
     | otherwise -> ErrorResult Failed
+  Nil -> ErrorResult UnexpectedEof
 
 
 -- | Return a parser that produces a character between '0' and '9' but fails if
@@ -443,6 +453,8 @@ lower ::
   Parser Char
 lower = charRange 'a' 'z'
 
+hexChar :: Parser Char
+hexChar = charRange 'A' 'F'
 
 -- | Return a parser that produces an upper-case character but fails if
 --
@@ -504,6 +516,9 @@ thisMany i pa = do
   a <- pa
   la <- thisMany (i - 1) pa
   return (a :. la)
+
+upToThisMany :: Int -> Parser a -> Parser (List a)
+upToThisMany n pa = foldRight (\i p -> p ||| thisMany i pa) failed (reverse (listh [0..n]))
 
 -- | Write a parser for Person.age.
 --

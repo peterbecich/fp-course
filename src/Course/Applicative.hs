@@ -520,6 +520,7 @@ intParserFunc (x:.xs)
   | otherwise = Empty
 intParserFunc Nil = Empty
 
+intParser :: Parser Int
 intParser = P intParserFunc
 
 charParserFunc :: List Char -> Optional (List Char, Char)
@@ -528,9 +529,11 @@ charParserFunc (x:.xs)
   | otherwise = Empty
 charParserFunc Nil = Empty
 
+oneTwoThreeFour :: List Char
 oneTwoThreeFour = '1':.'2':.'3':.'4':.Nil
 
 -- only parses the first character
+oneTwoThreeFour' :: Optional (List Char, Int)
 oneTwoThreeFour' = parse intParser oneTwoThreeFour
 
 -----------------------
