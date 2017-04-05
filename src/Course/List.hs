@@ -134,6 +134,9 @@ count i = (count (i-1)) ++ (i:.Nil)
 countFrom :: Integer -> List Integer
 countFrom i = i :. countFrom (i+1)
 
+countFrom' :: Int -> List Int
+countFrom' i = i :. countFrom' (i+1)
+
 
 -- | Map the given function on each element of the list.
 --
@@ -487,6 +490,10 @@ zipWith _ _  _ =
 
 zipWithIndex :: List a -> List (a, Integer)
 zipWithIndex lx = zipWith (\x i -> (x,i)) lx (countFrom 0)
+
+zipWithIndex' :: List a -> List (a, Int)
+zipWithIndex' lx = zipWith (\x i -> (x,i)) lx (countFrom' 0)
+
 
 unfoldr ::
   (a -> Optional (b, a))

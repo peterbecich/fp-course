@@ -15,6 +15,8 @@ import Course.List
 import Course.Optional
 import Data.Char
 
+import qualified Prelude as Pl
+
 -- $setup
 -- >>> :set -XOverloadedStrings
 -- >>> import Data.Char(isUpper)
@@ -349,6 +351,16 @@ digit :: Parser Char
 digit = charRange '0' '9'
 -- digit = is '0' ||| is '1' ||| is '2' ||| is '3' ||| is '4' ||| is '5' ||| is '6' ||| is '7' ||| is '8' ||| is '9'
 
+individualNatural :: Parser Int
+individualNatural = do
+  c <- digit
+  let
+    mi :: Optional Int
+    mi = read $ single c
+  case mi of
+    (Full i) -> valueParser i
+    Empty -> P $ \_ -> ErrorResult (UnexpectedChar c)
+
 -- | Accept any character within the range
 -- >>> parse (charRange 'a' 'm') "abcd"
 -- Result >bcd< 'a'
@@ -383,9 +395,18 @@ charRange lowerInclusive upperExclusive = let
 -- >>> isErrorResult (parse natural "")
 -- True
 natural :: Parser Int
-natural =
-  error "todo: Course.Parser#natural"
-
+natural = do
+  -- digits :: List Int -- this made the "do" block a Monad of Lists, rather than Parsers
+  digits <- (list1 individualNatural)
+  let
+    powers :: List (Int, Int)
+    powers = reverse (zipWithIndex' (reverse digits))
+    folder :: (Int, Int) -> Int -> Int
+    folder (coef, exponent) s = coef*(10 Pl.^ exponent) + s
+    summed :: Int
+    summed = foldRight folder 0 powers
+  return summed
+  
 --
 -- | Return a parser that produces a space character but fails if
 --
@@ -458,11 +479,11 @@ alpha = satisfy isAlpha
 -- >>> isErrorResult (parse (sequenceParser (character :. is 'x' :. upper :. Nil)) "abCdef")
 -- True
 sequenceParser :: List (Parser a) -> Parser (List a)
-sequenceParser lpa = error "todo"
+sequenceParser Nil = valueParser Nil
+sequenceParser (pa :. lpa) = pa >>= (\a -> (\la -> a :. la) <$> (sequenceParser lpa))
 
+  
   -- foldRight (\pa pla -> pa (\a -> pla >>= (\la -> a :. la))) (value Nil) lpa
--- sequenceParser Nil = failed
--- sequenceParser (pa :. lpa) = 
 
 
 -- | Return a parser that produces the given number of values off the given parser.
@@ -475,12 +496,14 @@ sequenceParser lpa = error "todo"
 --
 -- >>> isErrorResult (parse (thisMany 4 upper) "ABcDef")
 -- True
-thisMany ::
-  Int
-  -> Parser a
-  -> Parser (List a)
-thisMany =
-  error "todo: Course.Parser#thisMany"
+
+thisMany :: Int -> Parser a -> Parser (List a)
+thisMany 0 _ = failed
+thisMany 1 pa = single <$> pa
+thisMany i pa = do
+  a <- pa
+  la <- thisMany (i - 1) pa
+  return (a :. la)
 
 -- | Write a parser for Person.age.
 --
@@ -496,10 +519,9 @@ thisMany =
 --
 -- >>> isErrorResult (parse ageParser "-120")
 -- True
-ageParser ::
-  Parser Int
-ageParser =
-  error "todo: Course.Parser#ageParser"
+ageParser :: Parser Int
+ageParser = natural
+
 
 -- | Write a parser for Person.firstName.
 -- /First Name: non-empty string that starts with a capital letter and is followed by zero or more lower-case letters/
@@ -511,10 +533,11 @@ ageParser =
 --
 -- >>> isErrorResult (parse firstNameParser "abc")
 -- True
-firstNameParser ::
-  Parser Chars
-firstNameParser =
-  error "todo: Course.Parser#firstNameParser"
+firstNameParser :: Parser Chars
+firstNameParser = do
+  firstLetter <- upper
+  subsequentLower <- list lower
+  return (firstLetter :. subsequentLower)
 
 -- | Write a parser for Person.surname.
 --
@@ -533,10 +556,13 @@ firstNameParser =
 --
 -- >>> isErrorResult (parse surnameParser "abc")
 -- True
-surnameParser ::
-  Parser Chars
-surnameParser =
-  error "todo: Course.Parser#surnameParser"
+surnameParser :: Parser Chars
+surnameParser = do
+  firstLetter <- upper
+  subsequentLowerFive <- thisMany 5 lower
+  subsequentLower <- list lower
+  return $ firstLetter :. (subsequentLowerFive ++ subsequentLower)
+
 
 -- | Write a parser for Person.smoker.
 --
@@ -552,10 +578,8 @@ surnameParser =
 --
 -- >>> isErrorResult (parse smokerParser "abc")
 -- True
-smokerParser ::
-  Parser Char
-smokerParser =
-  error "todo: Course.Parser#smokerParser"
+smokerParser :: Parser Char
+smokerParser = is 'y' ||| is 'n'
 
 -- | Write part of a parser for Person#phoneBody.
 -- This parser will only produce a string of digits, dots or hyphens.
@@ -574,10 +598,10 @@ smokerParser =
 --
 -- >>> parse phoneBodyParser "a123-456"
 -- Result >a123-456< ""
-phoneBodyParser ::
-  Parser Chars
-phoneBodyParser =
-  error "todo: Course.Parser#phoneBodyParser"
+phoneBodyParser :: Parser Chars
+phoneBodyParser = let
+  phoneDigitParser = is '-' ||| is '.' ||| digit
+  in (list1 phoneDigitParser) ||| valueParser ""
 
 -- | Write a parser for Person.phone.
 --
@@ -596,10 +620,13 @@ phoneBodyParser =
 --
 -- >>> isErrorResult (parse phoneParser "a123-456")
 -- True
-phoneParser ::
-  Parser Chars
-phoneParser =
-  error "todo: Course.Parser#phoneParser"
+phoneParser :: Parser Chars
+phoneParser = do
+  firstDigit <- digit
+  middle <- phoneBodyParser
+  _ <- is '#'
+  return $ (single firstDigit) ++ middle
+
 
 -- | Write a parser for Person.
 --
@@ -645,10 +672,19 @@ phoneParser =
 --
 -- >>> parse personParser "123 Fred Clarkson y 123-456.789# rest"
 -- Result > rest< Person {age = 123, firstName = "Fred", surname = "Clarkson", smoker = 'y', phone = "123-456.789"}
-personParser ::
-  Parser Person
-personParser =
-  error "todo: Course.Parser#personParser"
+personParser :: Parser Person
+personParser = do
+  a <- ageParser
+  _ <- space
+  fn <- firstNameParser
+  _ <- space
+  sn <- surnameParser
+  _ <- space
+  smk <- smokerParser
+  _ <- space
+  phn <- phoneParser
+  return $ Person a fn sn smk phn
+
 
 -- Make sure all the tests pass!
 
