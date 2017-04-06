@@ -122,12 +122,12 @@ zipper ::
 zipper l x r =
   ListZipper (listh l) x (listh r)
 
-fromOptional ::
+fromOp ::
   Optional (ListZipper a)
   -> MaybeListZipper a
-fromOptional Empty =
+fromOp Empty =
   IsNotZ
-fromOptional (Full z) =
+fromOp (Full z) =
   IsZ z
 
 asZipper ::
