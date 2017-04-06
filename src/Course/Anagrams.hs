@@ -25,6 +25,8 @@ Functions that might help
 
 -}
 
+otto = "otto"
+peter = "peter"
 
 -- Return all anagrams of the given string
 -- that appear in the given dictionary file.
