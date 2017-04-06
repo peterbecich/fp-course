@@ -1,7 +1,8 @@
 module Data.TicTacToe where
 
 import           Prelude hiding (any, all, mapM, concat)
-import qualified GHC.OldList as L
+-- import qualified GHC.OldList as L
+import qualified GHC.List as L
 import           Test.QuickCheck
 import           Data.Map (Map, singleton)
 import qualified Data.Map as M
