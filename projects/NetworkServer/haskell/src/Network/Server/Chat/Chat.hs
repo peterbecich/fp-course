@@ -17,14 +17,12 @@ data ChatCommand =
   | Unknown String
   deriving (Eq, Show)
 
-incr ::
-  Chat Integer
+incr :: Chat Integer
 incr =
   do e <- readEnvval
      liftIO $ atomicModifyIORef e (\n -> (n + 1, n + 1))
 
-chat ::
-  IO a
+chat :: IO a
 chat =
   iorefLoop 0 (readIOEnvval >>= pPutStrLn . show) (process . chatCommand)
 
@@ -38,6 +36,8 @@ chat =
 --
 -- >>> chatCommand "INCR"
 -- Incr
+-- >>> chatCommand "foo"
+-- Unknown "foo"
 --
 -- >>> chatCommand "Nothing"
 -- UNKNOWN "Nothing"
@@ -50,8 +50,9 @@ chatCommand z =
                              , Incr <$ trimPrefixThen "INCR" z
                              ]
 
-process ::
-  ChatCommand
-  -> Chat ()
-process =
-  error "todo"
+process :: ChatCommand -> Chat ()
+-- improve this by printing result of increment in chat
+process Incr = fmap (\_ -> ()) incr 
+process (Chat str) = undefined
+process (Unknown str) = undefined
+

@@ -48,8 +48,11 @@ instance Monad f => Monad (Loop v f) where
       in l v)
 
 instance MonadTrans (Loop v) where
-  lift =
-    Loop . const
+  -- lift :: (Monad m, MonadTrans t) => m a -> t m a
+  -- Loop :: (Env v -> s -> f (a, s)) -> Loop v s f a
+  -- const :: a -> b -> a
+  -- Loop . const :: (s -> f (a, s)) -> Loop v s f a
+  lift = Loop . const
 
 instance MonadIO f => MonadIO (Loop v f) where
   liftIO =
@@ -87,8 +90,8 @@ perClient ::
   IOLoop v x -- client accepted (post)
   -> (String -> IOLoop v a) -- read line from client
   -> IOLoop v ()
-perClient =
-  error "todo"
+perClient (Loop v0) f = undefined
+
 
 loop ::
   IO w -- server initialise
