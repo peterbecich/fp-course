@@ -5,7 +5,7 @@ import System.IO(BufferMode(..))
 import Network(PortID(..), sClose, withSocketsDo, listenOn)
 import Data.IORef(IORef, newIORef, readIORef)
 import Data.Foldable(Foldable, mapM_)
-import Control.Applicative(Applicative, pure, (<*>))
+import Control.Applicative(Applicative, pure, (<*>), liftA2)
 import Control.Monad.Trans(MonadIO(..), MonadTrans(..))
 import Control.Monad(liftM)
 import Control.Concurrent(forkIO)
@@ -50,9 +50,15 @@ instance Functor f => Functor (Loop v s f) where
   fmap f (Loop k) =
     Loop (\env -> fmap (\(a, t) -> (f a, t)) . k env)
 
+-- TODO verify this
 instance Applicative f => Applicative (Loop v s f) where
-  pure = undefined
-  (<*>) = undefined
+  pure x = Loop $ \_ s -> pure (x, s)
+  (<*>) (Loop ffunc) (Loop fx0) = Loop $ \env s0 -> let
+    fabs = ffunc env s0
+    fas = fx0 env s0
+    tup (ab, _) (a, s2) = (ab a, s2)
+    in liftA2 tup fabs fas
+    
 
 instance Monad f => Monad (Loop v s f) where
   return a =

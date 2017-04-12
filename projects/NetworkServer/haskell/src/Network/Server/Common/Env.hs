@@ -7,11 +7,7 @@ import Network.Server.Common.Lens
 import Data.IORef(IORef, atomicModifyIORef)
 import Data.Set(Set)
 
-data Env a =
-  Env
-    Accept
-    (IORef (Set Ref))
-    a
+data Env a = Env Accept (IORef (Set Ref)) a
   deriving Eq
 
 -- extract Accept from Environment with Lens
