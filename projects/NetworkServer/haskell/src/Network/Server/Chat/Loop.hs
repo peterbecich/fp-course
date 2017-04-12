@@ -30,6 +30,7 @@ type IORefLoop v a =
   IOLoop (IORef v) a
 
 instance Functor f => Functor (Loop v f) where
+  -- fmap :: (a -> b) -> Loop v f a -> Loop v f b
   fmap f (Loop k) =
     Loop (fmap f . k)
 
@@ -75,11 +76,12 @@ server ::
 server i r (Loop f) =
   let hand s w c = forever $
                      do q <- accept' s
-                        lSetBuffering q NoBuffering
+                        _ <- lSetBuffering q NoBuffering
                         _ <- atomicModifyIORef_ c (S.insert (refL `getL` q))
                         x <- r w
                         forkIO (f (Env q c x))
-  in withSocketsDo $ do
+  -- https://hackage.haskell.org/package/network-2.6.3.1/docs/Network.html
+  in withSocketsDo $ do 
        s <- listenOn (PortNumber 6060)
        w <- i
        c <- newIORef S.empty
@@ -92,7 +94,7 @@ perClient ::
   IOLoop v x -- client accepted (post)
   -> (String -> IOLoop v a) -- read line from client
   -> IOLoop v ()
-perClient (Loop v0) f = undefined
+perClient (Loop v0) funcLoop = Loop $ \_ -> putStrLn "foo"
 
 
 loop ::
