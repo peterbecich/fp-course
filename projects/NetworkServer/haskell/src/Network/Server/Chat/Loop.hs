@@ -42,6 +42,7 @@ instance Applicative f => Applicative (Loop v f) where
 instance Monad f => Monad (Loop v f) where
   return =
     Loop . return . return
+  -- (>>=) :: Loop v f a -> (a -> Loop v f b) -> Loop v f b
   Loop k >>= f =
     Loop (\v -> k v >>= \a ->
       let Loop l = f a
@@ -58,6 +59,7 @@ instance MonadIO f => MonadIO (Loop v f) where
   liftIO =
     lift . liftIO
 
+-- exception try?
 etry ::
   Exception e =>
   (Env v -> IO a)

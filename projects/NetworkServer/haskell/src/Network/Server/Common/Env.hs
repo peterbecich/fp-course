@@ -14,6 +14,7 @@ data Env a =
     a
   deriving Eq
 
+-- extract Accept from Environment with Lens
 acceptL ::
   Lens (Env a) Accept
 acceptL =
@@ -21,6 +22,8 @@ acceptL =
     (\(Env _ s a) x -> Env x s a)
     (\(Env x _ _) -> x)
 
+-- extract mutable set of clients from Environment with Lens
+-- mutable set protected by effect system
 clientsL ::
   Lens (Env a) (IORef (Set Ref))
 clientsL =
