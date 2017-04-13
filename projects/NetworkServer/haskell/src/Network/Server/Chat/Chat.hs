@@ -8,8 +8,9 @@ import Data.IORef(atomicModifyIORef)
 import Control.Applicative((<$), (<$>))
 import Control.Monad.Trans(MonadIO(..))
 
-type Chat a =
-  IORefLoop Integer a
+-- type Chat a =   Loop (IORef Integer) (IO a)
+-- type Chat a = IOLoop (IORef Integer) a
+type Chat a = IORefLoop Integer a
 
 data ChatCommand =
   Chat String
@@ -52,7 +53,9 @@ chatCommand z =
 
 process :: ChatCommand -> Chat ()
 -- improve this by printing result of increment in chat
-process Incr = fmap (\_ -> ()) incr 
-process (Chat str) = undefined
-process (Unknown str) = undefined
+process Incr = incr >> pPutStrLn "incremented"
+process (Chat str) = pPutStrLn str
+process (Unknown str) = pPutStrLn str
+-- process (Chat str) = Loop (\_ -> putStrLn str)
+-- process (Unknown str) = Loop (\_ -> putStrLn str)
 

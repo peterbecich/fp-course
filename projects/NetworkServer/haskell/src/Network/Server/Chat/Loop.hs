@@ -41,6 +41,8 @@ instance Applicative f => Applicative (Loop v f) where
     Loop (\a -> f a <*> x a)
 
 instance Monad f => Monad (Loop v f) where
+  -- left return probably refers to Reader monad
+  -- right return probably reverse to Monad f
   return =
     Loop . return . return
   -- (>>=) :: Loop v f a -> (a -> Loop v f b) -> Loop v f b
@@ -87,14 +89,70 @@ server i r (Loop f) =
        c <- newIORef S.empty
        hand s w c `finally` sClose s
 
+-- https://downloads.haskell.org/~ghc/8.0.1/docs/html/libraries/base-4.9.0.0/Data-IORef.html
 allClients :: IOLoop v (Set Ref)
-allClients = Loop $ \env -> readIORef (clientsL `getL` env)
+allClients = Loop $ \env -> readIORef (getL clientsL env)
+
+
+-- think of this as
+-- IOLoop v () -> (String -> IOLoop v ()) -> IOLoop v ()
+
+-- <Gurkenglas> peterbecich, we only have one v to pass to all places that
+--  require it, so the type signature may as well be:
+--  ((Accept, IORef (Set Ref)) -> IO ()) ->
+--    (String -> (Accept, IORef (Set Ref)) -> IO ()) ->
+--    (Accept, IORef (Set Ref)) ->
+--    IO ()	        [12:50]
+
+
+-- <Gurkenglas> I'll just guess that we'll hardly be expected to build new IORefs
+-- 	     here instead of passing the one already have, but we might well
+-- 	     want to access it, so:
+-- IORef (Set Ref) ->
+--   (Accept -> IO ()) ->
+--   (String -> Accept -> IO ()) ->
+--   Accept ->
+--   IO ()	        [12:51]
+
+-- perClient ::
+--   Loop v IO x
+--   -> (String -> Loop v IO a)
+--   -> Loop v IO ()
+
+-- perClient ::
+--   ((Accept, IORef (Set Ref)) -> IO ()) ->
+--   (String -> ((Accept, IORef (Set Ref)) -> IO ())) ->
+--   ((Accept, IORef (Set Ref)) -> IO ())
+
+-- (>>=) :: Loop v f a -> (a -> Loop v f b) -> Loop v f b
 
 perClient ::
   IOLoop v x -- client accepted (post)
   -> (String -> IOLoop v a) -- read line from client
   -> IOLoop v ()
-perClient (Loop v0) funcLoop = Loop $ \_ -> putStrLn "foo"
+perClient loop func = do
+  env <- readEnv
+  let acc = getL acceptL env
+  undefined
+  
+  -- Loop $ \env ->
+  -- let acc = getL acceptL env --
+  --     fromClient = func (show acc)
+  -- in putStrLn (show acc)
+
+
+  -- do
+  -- clientAccepted <- loop
+  -- others <- allClients
+  
+
+  -- do
+  -- others <- allClients
+  -- pPutStrLn $ show others
+  
+
+
+  -- Loop $ \_ -> putStrLn "foo"
 
 
 loop ::
@@ -125,7 +183,7 @@ pPutStrLn ::
   String
   -> IOLoop v ()
 pPutStrLn s =
-  Loop (`lPutStrLn` s)
+  Loop (\handle -> lPutStrLn handle s)
 
 (!) ::
   Foldable t =>
@@ -159,19 +217,19 @@ readEnvval ::
   Applicative f =>
   Loop v f v
 readEnvval =
-  fmap (envvalL `getL`) readEnv
+  fmap (getL envvalL) readEnv
 
 readIOEnvval ::
   IORefLoop a a
 readIOEnvval =
   Loop $ \env ->
-    readIORef (envvalL `getL` env)
+    readIORef (getL envvalL env)
 
 allClientsButThis ::
   IOLoop v (Set Ref)
 allClientsButThis =
   Loop $ \env ->
-    fmap (S.delete ((acceptL .@ refL) `getL` env)) (readIORef (clientsL `getL` env))
+    fmap (S.delete ((acceptL .@ refL) `getL` env)) (readIORef (getL clientsL env))
 
 -- Control.Monad.CatchIO
 ecatch ::
