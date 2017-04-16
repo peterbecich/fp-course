@@ -54,7 +54,8 @@ chatCommand z =
 process :: ChatCommand -> Chat ()
 -- improve this by printing result of increment in chat
 process Incr = incr >> pPutStrLn "incremented"
-process (Chat str) = pPutStrLn str
+process (Chat str) =
+  perClient (pPutStrLn str) pPutStrLn
 process (Unknown str) = pPutStrLn str
 -- process (Chat str) = Loop (\_ -> putStrLn str)
 -- process (Unknown str) = Loop (\_ -> putStrLn str)

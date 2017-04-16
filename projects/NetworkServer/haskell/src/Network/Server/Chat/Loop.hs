@@ -20,14 +20,12 @@ import Network.Server.Common.Ref
 import Data.Set(Set)
 import qualified Data.Set as S
 
-data Loop v f a =
-  Loop (Env v -> f a)
+data Loop v f a = Loop (Env v -> f a)
 
-type IOLoop v a =
-  Loop v IO a
+type IOLoop v a = Loop v IO a
 
-type IORefLoop v a =
-  IOLoop (IORef v) a
+--type IORefLoop v a = Loop (Env (IORef v) -> (IO a))
+type IORefLoop v a = IOLoop (IORef v) a
 
 instance Functor f => Functor (Loop v f) where
   -- fmap :: (a -> b) -> Loop v f a -> Loop v f b
@@ -79,7 +77,7 @@ server i r (Loop f) =
   let hand s w c = forever $
                      do q <- accept' s
                         _ <- lSetBuffering q NoBuffering
-                        _ <- atomicModifyIORef_ c (S.insert (refL `getL` q))
+                        _ <- atomicModifyIORef_ c (S.insert (getL refL q))
                         x <- r w
                         forkIO (f (Env q c x))
   -- https://hackage.haskell.org/package/network-2.6.3.1/docs/Network.html
@@ -93,6 +91,12 @@ server i r (Loop f) =
 allClients :: IOLoop v (Set Ref)
 allClients = Loop $ \env -> readIORef (getL clientsL env)
 
+currentClient :: IOLoop v Ref
+currentClient =
+  Loop $ \env -> return $ getL refL (getL acceptL env)
+
+accepted :: IOLoop v Accept
+accepted = Loop $ \env -> return $ getL acceptL env
 
 -- think of this as
 -- IOLoop v () -> (String -> IOLoop v ()) -> IOLoop v ()
@@ -106,13 +110,11 @@ allClients = Loop $ \env -> readIORef (getL clientsL env)
 
 
 -- <Gurkenglas> I'll just guess that we'll hardly be expected to build new IORefs
--- 	     here instead of passing the one already have, but we might well
--- 	     want to access it, so:
+-- here instead of passing the one already have, but we might well want to access it, so:
 -- IORef (Set Ref) ->
 --   (Accept -> IO ()) ->
 --   (String -> Accept -> IO ()) ->
---   Accept ->
---   IO ()	        [12:51]
+--   (Accept -> IO ())
 
 -- perClient ::
 --   Loop v IO x
@@ -125,35 +127,19 @@ allClients = Loop $ \env -> readIORef (getL clientsL env)
 --   ((Accept, IORef (Set Ref)) -> IO ())
 
 -- (>>=) :: Loop v f a -> (a -> Loop v f b) -> Loop v f b
-
+-- mapM_ :: (Monad m, Foldable t) => (a -> m b) -> t a -> m ()
 perClient ::
   IOLoop v x -- client accepted (post)
   -> (String -> IOLoop v a) -- read line from client
   -> IOLoop v ()
-perClient loop func = do
-  env <- readEnv
-  let acc = getL acceptL env
-  undefined
-  
-  -- Loop $ \env ->
-  -- let acc = getL acceptL env --
-  --     fromClient = func (show acc)
-  -- in putStrLn (show acc)
-
-
-  -- do
-  -- clientAccepted <- loop
-  -- others <- allClients
-  
-
-  -- do
-  -- others <- allClients
-  -- pPutStrLn $ show others
-  
-
-
-  -- Loop $ \_ -> putStrLn "foo"
-
+perClient (Loop fClientAccepted) func = do
+  others <- allClientsButThis -- :: Set Ref
+  _ <- mapM_ (\h -> (Loop (\_ -> lPutStrLn h "Someone new has entered the chat"))) others
+  cc <- currentClient
+  clientMessage <- Loop (\_ -> lGetLine cc)
+  _ <- func $ "You typed: "++clientMessage
+  -- _ <- liftIO $ chat
+  pPutStrLn $ show others
 
 loop ::
   IO w -- server initialise
