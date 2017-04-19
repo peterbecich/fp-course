@@ -1,6 +1,7 @@
 module Network.Server.Chat.Chat where
 
 import Network.Server.Common.Line
+import Network.Server.Common.HandleLens (lPutStrLn)
 import Network.Server.Chat.Loop
 import Data.Maybe(fromMaybe)
 import Data.Foldable(msum)
@@ -53,10 +54,12 @@ chatCommand z =
 
 process :: ChatCommand -> Chat ()
 -- improve this by printing result of increment in chat
-process Incr = incr >> pPutStrLn "incremented"
-process (Chat str) =
-  perClient (pPutStrLn str) pPutStrLn
-process (Unknown str) = pPutStrLn str
--- process (Chat str) = Loop (\_ -> putStrLn str)
--- process (Unknown str) = Loop (\_ -> putStrLn str)
+-- mapM_ :: (Monad m, Foldable t) => (a -> m b) -> t a -> m ()
+process Incr = incr >>= (pPutStrLn . show)
+process (Unknown str) = pPutStrLn $ "Invalid: "++str
+process (Chat str) = do
+  -- otherClients :: Set Ref
+  otherClients <- allClientsButThis
+  mapM_ (\ref -> Loop (\_ -> lPutStrLn ref str)) otherClients
+
 

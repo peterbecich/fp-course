@@ -88,6 +88,7 @@ server i r (Loop f) =
        hand s w c `finally` sClose s
 
 -- https://downloads.haskell.org/~ghc/8.0.1/docs/html/libraries/base-4.9.0.0/Data-IORef.html
+-- allClients :: Loop (Env v -> IO (Set Ref))
 allClients :: IOLoop v (Set Ref)
 allClients = Loop $ \env -> readIORef (getL clientsL env)
 
@@ -128,18 +129,30 @@ accepted = Loop $ \env -> return $ getL acceptL env
 
 -- (>>=) :: Loop v f a -> (a -> Loop v f b) -> Loop v f b
 -- mapM_ :: (Monad m, Foldable t) => (a -> m b) -> t a -> m ()
+
+-- etry :: Exception e => (Env v -> IO a) -> IOLoop v s (Either e a)
 perClient ::
   IOLoop v x -- client accepted (post)
   -> (String -> IOLoop v a) -- read line from client
   -> IOLoop v ()
-perClient (Loop fClientAccepted) func = do
-  others <- allClientsButThis -- :: Set Ref
-  _ <- mapM_ (\h -> (Loop (\_ -> lPutStrLn h "Someone new has entered the chat"))) others
-  cc <- currentClient
-  clientMessage <- Loop (\_ -> lGetLine cc)
-  _ <- func $ "You typed: "++clientMessage
-  -- _ <- liftIO $ chat
-  pPutStrLn $ show others
+perClient clientAccepted func = do
+  _ <- clientAccepted
+  let toClient = do
+        lineFromClient <- etry lGetLine
+        case lineFromClient of
+          Left exception -> xprint exception
+          Right [] -> toClient -- loop?
+          Right line -> func line >> toClient -- loop?
+  toClient
+  
+  -- do
+  -- others <- allClientsButThis -- :: Set Ref
+  -- _ <- mapM_ (\h -> (Loop (\_ -> lPutStrLn h "Someone new has entered the chat"))) others
+  -- cc <- currentClient
+  -- clientMessage <- Loop (\_ -> lGetLine cc)
+  -- _ <- func $ "You typed: "++clientMessage
+  -- -- _ <- liftIO $ chat
+  -- pPutStrLn $ show others
 
 loop ::
   IO w -- server initialise
