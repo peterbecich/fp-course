@@ -5,9 +5,11 @@ import Network.Server.Common.HandleLens (lPutStrLn)
 import Network.Server.Chat.Loop
 import Data.Maybe(fromMaybe)
 import Data.Foldable(msum)
-import Data.IORef(atomicModifyIORef)
+import Data.IORef(atomicModifyIORef, readIORef)
 import Control.Applicative((<$), (<$>))
 import Control.Monad.Trans(MonadIO(..))
+import Control.Monad (replicateM_)
+import Text.Read (readMaybe)
 
 -- type Chat a =   Loop (IORef Integer) (IO a)
 -- type Chat a = IOLoop (IORef Integer) a
@@ -16,6 +18,7 @@ type Chat a = IORefLoop Integer a
 data ChatCommand =
   Chat String
   | Incr
+  | Add Int
   | Unknown String
   deriving (Eq, Show)
 
@@ -43,6 +46,8 @@ chat =
 --
 -- >>> chatCommand "Nothing"
 -- UNKNOWN "Nothing"
+
+-- trimPrefixThen :: String -> String -> Maybe String
 chatCommand ::
   String
   -> ChatCommand
@@ -50,6 +55,10 @@ chatCommand z =
   Unknown z `fromMaybe` msum [
                                Chat <$> trimPrefixThen "CHAT" z
                              , Incr <$ trimPrefixThen "INCR" z
+                             , do
+                                 trimmed <- trimPrefixThen "ADD" z
+                                 parsed <- readMaybe trimmed
+                                 return $ Add parsed
                              ]
 
 process :: ChatCommand -> Chat ()
@@ -61,5 +70,8 @@ process (Chat str) = do
   -- otherClients :: Set Ref
   otherClients <- allClientsButThis
   mapM_ (\ref -> Loop (\_ -> lPutStrLn ref str)) otherClients
-
-
+process (Add n) = do
+  _ <- replicateM_ n incr
+  e <- readEnvval
+  i <- liftIO $ readIORef e
+  pPutStrLn $ show i
