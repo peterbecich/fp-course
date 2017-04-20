@@ -14,6 +14,7 @@ import Data.Maybe(fromMaybe)
 import Data.Foldable(msum, find)
 import Data.Set(Set)
 import Control.Applicative((<$), (<$>))
+import Control.Monad.IO.Class
 import System.IO(hGetLine, hPutStrLn)
 
 type FinishedGames =
@@ -192,20 +193,30 @@ allClients ::
 allClients =
   initLoop $ \env -> (readIORef (clientsL `getL` env))
 
-process ::
-  Command
-  -> Game ()
-process =
-  error "todo"
+process :: Command -> Game ()
+process (Move pos) = error "todo"
+process Current = error "todo"
+process Finished = error "todo"
+process (Chat str) = error "todo"
+process Turn = error "todo"
+process (At pos) = error "todo"
+process (Unknown str) = error "todo"
 
+
+-- only for local testing?
 game ::
   Game x -- client accepted (post)
   -> (String -> Game w) -- read line from client
-  -> IO a
-game =
-  error "todo"
+  -> Game () -- originally returned IO a
+game clientAccepted func = do
+  _ <- clientAccepted
+  lineFromClient <- liftIO undefined
+  undefined
 
-play ::
-  IO a
-play =
-  game (currentBoard >>= pPutStrLn . show) (process . command)
+
+
+play :: IO () -- IO a
+play = let
+  loop = game (currentBoard >>= pPutStrLn . show) (process . command)
+  env = undefined
+  in execLoop loop undefined (emptyBoard, [])

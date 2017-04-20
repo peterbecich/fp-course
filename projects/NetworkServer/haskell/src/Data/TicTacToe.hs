@@ -30,6 +30,8 @@ data Board =
   Board (Map Position Player) [(Position, Player)]
   deriving Eq
 
+emptyBoard = Board M.empty []
+
 data FinishedBoard =
   FinishedBoard (Maybe Player) Board
   deriving Eq

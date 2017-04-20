@@ -24,9 +24,11 @@ import qualified Data.Set as S
 data Loop v s f a =
   Loop (Env v -> s -> f (a, s))
 
+-- Loop (Env v -> s -> IO (a, s))
 type IOLoop v s a =
   Loop v s IO a
 
+-- Loop ((Env IORef v) -> s -> IO (a, s))
 type IORefLoop v s a =
   IOLoop (IORef v) s a
 
